@@ -14,6 +14,10 @@ import {
 import { apiCartGet, apiLogout, apiMe, apiLogin, apiSettingsGet } from './firebase.js';
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Loading screen (page-loader.js): a script that fills the page takes a hold and calls the
+// returned function once its content is on screen; the screen lifts when all are released.
+function holdLoader() { return window.phLoaderHold ? window.phLoaderHold() : () => {}; }
+const releaseAuthHold = holdLoader();   // navbar/tab bar show the right Sign In / name first
 
 // ── UTILS ──────────────────────────────────────
 function qs(sel, ctx)  { return (ctx || document).querySelector(sel); }
@@ -326,10 +330,13 @@ function initPageTransitions() {
     if (url.origin !== location.origin || (url.pathname === location.pathname && url.search === location.search)) return;
     e.preventDefault();
     document.body.classList.add('page-leave');
+    window.phLoaderShow?.();
     setTimeout(() => { location.href = a.href; }, 90);
   });
   // Coming back via the browser/Android back button restores the page from cache
   window.addEventListener('pageshow', ev => { if (ev.persisted) document.body.classList.remove('page-leave'); });
+  // Pull-to-refresh and other reloads
+  window.addEventListener('beforeunload', () => window.phLoaderShow?.());
 }
 
 // ── PRODUCT CARD (catalog, home) ────────────────
@@ -487,7 +494,8 @@ async function initTierCards() {
   const cards = qsa('[data-tier-card]');
   const discEls = qsa('[data-disc]');
   if (!cards.length && !discEls.length) return;
-  const [{ settings }, user] = await Promise.all([apiSettingsGet(), getUser()]);
+  const ready = holdLoader();
+  const [{ settings }, user] = await Promise.all([apiSettingsGet(), getUser()]).finally(ready);
   discEls.forEach(el => {
     const v = settings['tier_discount_' + el.dataset.disc];
     if (v != null) el.textContent = v;
@@ -609,8 +617,9 @@ function init() {
 
   // ── AUTH STATE — wires everything together ──
   onAuthStateChanged(auth, async (firebaseUser) => {
-    const customer = firebaseUser ? (await apiMe()).user : null;
+    const customer = firebaseUser ? (await apiMe().catch(() => ({}))).user : null;
     initAuthButton(customer);
+    releaseAuthHold();
     if (customer) await refreshCartBadge();
     else setBadges(0);
   });
@@ -619,4 +628,4 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 else init();
 
 // ── EXPORTS (used by page-specific inline scripts) ──
-export { icon, qs, qsa, esc, peso, Toast, showMsg, refreshCartBadge, getUser, apiLogout, flyToCart, confetti, skeletonCards, productCard, openSignIn };
+export { holdLoader, icon, qs, qsa, esc, peso, Toast, showMsg, refreshCartBadge, getUser, apiLogout, flyToCart, confetti, skeletonCards, productCard, openSignIn };

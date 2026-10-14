@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="description" content="Manage your PelotonHub profile, membership tier, wishlist, and notification preferences." />
   <title>PelotonHub — My Profile</title>
+  <script src="js/page-loader.js"></script>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%230b0b0a' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%230b0b0a'/%3E%3Cline x1='16' y1='16' x2='16' y2='3' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='26' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='6' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -136,7 +137,7 @@
 </footer>
 
 <script type="module">
-import { qs, qsa, esc, peso, showMsg, openSignIn, icon } from './js/main.js';
+import { qs, qsa, esc, peso, showMsg, openSignIn, icon, holdLoader } from './js/main.js';
 import {
   auth, onAuthStateChanged,
   apiMe, apiLogout, apiWishlistGet, apiWishlistToggle, apiSettingsGet, apiOrdersGet,
@@ -147,6 +148,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { updateProfile } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
+const ready = holdLoader();   // loading screen waits for the profile and wishlist
 const TIER_DISC   = { Spoke: 5, Chain: 10, Peloton: 20 };
 const TIER_SERVICE = { Spoke: '0', Chain: '1', Peloton: '∞' };   // Chain: 1 tune-up a year; Peloton: unlimited flat fixes
 
@@ -164,9 +166,9 @@ function showSignedOut() {
 }
 const stopGate = onAuthStateChanged(auth, async (firebaseUser) => {
   stopGate();
-  if (!firebaseUser) { showSignedOut(); return; }
+  if (!firebaseUser) { showSignedOut(); ready(); return; }
   const res = await apiMe();
-  if (!res.ok || !res.user) { showSignedOut(); return; }
+  if (!res.ok || !res.user) { showSignedOut(); ready(); return; }
   const user = res.user;
 
   // Populate sidebar card
@@ -236,7 +238,8 @@ const stopGate = onAuthStateChanged(auth, async (firebaseUser) => {
   });
 
   // Load wishlist
-  await loadWishlist();
+  await loadWishlist().catch(() => {});
+  ready();
 });
 
 // ── WISHLIST ──────────────────────────────────────────────────

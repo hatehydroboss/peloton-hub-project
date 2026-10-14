@@ -462,3 +462,10 @@ body.page-leave footer { opacity: 0; transform: translateY(-6px); transition: op
   .landing-page .landing-card > p { margin-bottom: 1.4rem; }
   .landing-page .landing-footer-note { margin-top: 1.2rem; }
 }
+
+/* Content that arrives after the page opens (catalog filters, order lists…) shouldn't
+   let the footer ride up into view and then get shoved down: keep main a screen tall */
+body:not(.landing-page) > main { min-height: calc(100vh - var(--nav-h)); min-height: calc(100svh - var(--nav-h)); }
+@media (max-width: 900px) {
+  body:not(.landing-page) > main { min-height: calc(100svh - var(--nav-h) - var(--tabbar-h) - var(--safe-b)); }
+}

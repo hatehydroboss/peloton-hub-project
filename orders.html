@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>PelotonHub — Order History</title>
+  <script src="js/page-loader.js"></script>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%230b0b0a' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%230b0b0a'/%3E%3Cline x1='16' y1='16' x2='16' y2='3' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='26' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='6' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
@@ -125,7 +126,8 @@
 </footer>
 
 <script type="module">
-import { esc, peso, getUser, showMsg, Toast } from './js/main.js';
+import { esc, peso, getUser, showMsg, Toast, holdLoader } from './js/main.js';
+const ready = holdLoader();
 import { apiOrdersGet, apiOrderCancel } from './js/firebase.js';
 
 function cap(s){return s?s.split('_').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '):'';}
@@ -148,6 +150,7 @@ function render(){
 
 function loadOrders(){
   apiOrdersGet().then(d=>{
+    ready();
     if(d.ok){ALL_ORDERS=d.orders;render();}
     else document.getElementById('orders-tbody').innerHTML='<tr><td colspan="7" style="color:var(--ink-3)">Couldn’t load your orders. <a href="#" onclick="location.reload();return false;" style="color:var(--accent);font-weight:700;">Try again</a></td></tr>';
   });
@@ -209,7 +212,7 @@ window.cancelOrder=cancelOrder;
 
 const user=await getUser();
 document.getElementById(user?'member-view':'guest-view').hidden=false;
-if(user) loadOrders();
+if(user) loadOrders(); else ready();
 </script>
 </body>
 </html>
