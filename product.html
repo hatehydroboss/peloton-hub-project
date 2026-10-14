@@ -85,7 +85,7 @@ function stars(n){n=Math.max(0,Math.min(5,Math.round(n)));return '★'.repeat(n)
 function initials(name){return String(name||'?').replace(/ —.*$/,'').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();}
 
 const id = new URLSearchParams(location.search).get('id');
-if(!id) location.replace('catalog.html');
+if(!id){ location.replace('catalog.html'); throw new Error('No product id'); }
 
 const [user, res] = await Promise.all([getUser(), apiCatalog({id})]);
 if(!res.ok){
@@ -234,9 +234,10 @@ document.querySelectorAll('.pd-size').forEach(b=>b.addEventListener('click',()=>
 if(user && p.in_stock){
   document.getElementById('add-to-cart-btn').addEventListener('click', async ()=>{
     const btn = document.getElementById('add-to-cart-btn');
-    btn.classList.add('is-loading'); btn.textContent = 'Adding…';
+    if(btn.disabled) return;
+    btn.disabled = true; btn.classList.add('is-loading'); btn.textContent = 'Adding…';
     const data = await apiCartAdd({product_id:p.id,qty:1,size});
-    btn.classList.remove('is-loading'); btn.textContent = 'Add to Cart';
+    btn.disabled = false; btn.classList.remove('is-loading'); btn.textContent = 'Add to Cart';
     const msg  = document.getElementById('cart-msg');
     if(data.ok){
       showMsg(msg,'success','Added to cart!');
@@ -248,7 +249,12 @@ if(user && p.in_stock){
 
 if(user){
   document.getElementById('wishlist-btn').addEventListener('click', async ()=>{
+    const wbtn = document.getElementById('wishlist-btn');
+    if(wbtn.disabled) return;                    // a double-tap would undo the first tap
+    wbtn.disabled = true;
     const data = await apiWishlistToggle({product_id:p.id});
+    wbtn.disabled = false;
+    if(!data.ok) showMsg(document.getElementById('cart-msg'),'error',data.error||'Could not update your wishlist');
     if(data.ok){
       inWishlist=data.in_wishlist;
       const wb=document.getElementById('wishlist-btn');
@@ -266,7 +272,11 @@ if(user){
     const body   = document.getElementById('review-body').value.trim();
     const msg    = document.getElementById('review-msg');
     if(!body) return showMsg(msg,'error','Please write a review.');
+    const sbtn = document.getElementById('review-submit');
+    if(sbtn.disabled) return;
+    sbtn.disabled = true; sbtn.textContent = 'Posting…';
     const data = await apiReviewSubmit({product_id:p.id,rating,body});
+    if(!data.ok){ sbtn.disabled = false; sbtn.textContent = 'Submit review'; }
     if(data.ok){showMsg(msg,'success','Thanks! Your review is posted.');document.getElementById('review-body').value='';setTimeout(()=>location.reload(),1200);}
     else showMsg(msg,'error',data.error);
   });

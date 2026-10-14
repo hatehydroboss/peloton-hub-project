@@ -53,7 +53,7 @@
     <!-- FILTERS (sidebar on desktop, slide-up sheet on phones) -->
     <div class="filter-backdrop" id="filter-backdrop"></div>
     <aside class="filter-panel" id="filter-panel" aria-label="Filters">
-      <div class="filter-sheet-head"><strong>Filters</strong><button type="button" id="filter-done">Show results</button></div>
+      <div class="filter-sheet-head"><strong>Filters</strong><span class="fs-actions"><button type="button" class="fs-clear" id="filter-clear-sheet">Clear</button><button type="button" id="filter-done">Show results</button></span></div>
       <div class="f-head"><span>Filters</span><button type="button" class="f-reset" id="filter-reset">Clear all</button></div>
 
       <section class="f-group">
@@ -234,13 +234,18 @@ function renderChips(){
   }));
 }
 
+let loadSeq = 0;   // only the newest request may draw (fast typing / filter taps finish out of order)
 function loadProducts(){
   const grid=document.getElementById('catalog-grid');
+  const seq = ++loadSeq;
   grid.innerHTML=skeletonCards(6);
+  document.getElementById('catalog-pagination').innerHTML='';
   updateFilterCount();
   renderChips();
   apiCatalog(buildParams()).then(d=>{
-    if(!d.ok){grid.innerHTML='<div class="empty-results"><div class="er-ico"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-offline"/></svg></div><h3>Couldn’t load products</h3><p>Check your connection and try again.</p><button class="btn-outline" type="button" onclick="location.reload()">Retry</button></div>';return;}
+    if(seq !== loadSeq) return;
+    document.getElementById('filter-done').textContent = d.ok ? `Show ${d.total} result${d.total===1?'':'s'}` : 'Show results';
+    if(!d.ok){document.getElementById('result-count').textContent='';grid.innerHTML='<div class="empty-results"><div class="er-ico"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-offline"/></svg></div><h3>Couldn’t load products</h3><p>Check your connection and try again.</p><button class="btn-outline" type="button" onclick="location.reload()">Retry</button></div>';return;}
     const from = d.total ? (state.page-1)*PER_PAGE+1 : 0, to = Math.min(state.page*PER_PAGE, d.total);
     document.getElementById('result-count').textContent = d.total ? `Showing ${from}–${to} of ${d.total} product${d.total===1?'':'s'}` : '';
     grid.innerHTML=d.products.map(productCard).join('')||`
@@ -320,6 +325,12 @@ function loadProducts(){
 
 // Toolbar events
 let searchTimer;
+// Phone keyboards: "Search"/Enter runs the search now and closes the keyboard so results are visible
+document.getElementById('catalog-q').addEventListener('keydown',e=>{
+  if(e.key!=='Enter') return;
+  e.preventDefault(); clearTimeout(searchTimer);
+  state.q=e.target.value.trim(); state.page=1; loadProducts(); e.target.blur();
+});
 document.getElementById('catalog-q').addEventListener('input',e=>{
   clearTimeout(searchTimer);
   searchTimer=setTimeout(()=>{state.q=e.target.value;state.page=1;loadProducts();},300);
@@ -338,6 +349,7 @@ const panel = document.getElementById('filter-panel'), backdrop = document.getEl
 function openFilters(open){ panel.classList.toggle('open', open); backdrop.classList.toggle('open', open); document.body.classList.toggle('filters-open', open); document.body.style.overflow = open ? 'hidden' : ''; }
 document.getElementById('filter-open').addEventListener('click', () => openFilters(true));
 document.getElementById('filter-done').addEventListener('click', () => openFilters(false));
+document.getElementById('filter-clear-sheet').addEventListener('click', () => document.getElementById('filter-reset').click());
 backdrop.addEventListener('click', () => openFilters(false));
 function updateFilterCount(){
   const n = (state.cat?1:0) + (state.sub?1:0) + state.brands.length + (state.instock?1:0);

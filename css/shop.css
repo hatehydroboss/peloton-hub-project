@@ -488,3 +488,53 @@ a:hover > .picon.arrow, button:hover > .picon.arrow { transform: translateX(3px)
 @media (max-width: 420px) { .fsel-label { display: none; } }
 @media (prefers-reduced-motion: reduce) { .fsel-list, .fsel-caret, .fsel-check { transition: none; } }
 .filter-open-btn { min-height: 46px; }   /* same height as the sort button beside it */
+
+/* ═════════════ Profile wishlist ═════════════ */
+.wishlist-grid { gap: .75rem; }
+.wishlist-item { display: flex; align-items: center; gap: .9rem; padding: .7rem; background: var(--white); border: 1px solid var(--line); border-radius: 16px; min-width: 0; }
+.wishlist-img-link { width: 76px; height: 64px; flex-shrink: 0; border-radius: 12px; overflow: hidden; background: #fff; border: 1px solid var(--line); display: grid; place-items: center; }
+.wishlist-img-link img { width: 100%; height: 100%; object-fit: contain; }
+.wishlist-placeholder .picon { width: 34px; height: 34px; color: var(--ink-3); }
+.wishlist-info { flex: 1; min-width: 0; }
+.wishlist-name { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: .86rem; font-weight: 600; line-height: 1.35; color: var(--ink-1); }
+.wishlist-name:hover { color: var(--accent); }
+.wishlist-price { font-family: var(--font-mono); font-size: .84rem; font-weight: 700; margin-top: .2rem; }
+.wishlist-remove { flex-shrink: 0; padding: .5rem 0 3px; font-size: .68rem; }
+.wishlist-remove:disabled { opacity: .5; cursor: default; }
+
+/* Phone filter sheet: "Clear all" lives in the sheet header (the desktop one is hidden there) */
+.filter-sheet-head .fs-actions { display: flex; align-items: center; gap: .4rem; }
+.filter-sheet-head .fs-clear { background: none !important; color: var(--accent) !important; padding: .5rem .6rem !important; }
+
+/* ═════════════ Events page ═════════════ */
+.ev-list { display: grid; gap: 1rem; }
+.event-row.ev { display: flex; gap: 1.5rem; padding: 1.5rem; align-items: flex-start; border: 1px solid var(--line); margin: 0; }
+.ev .date-badge { flex-shrink: 0; text-align: center; min-width: 56px; }
+.ev-dd { font-size: 1.4rem; font-weight: 700; font-family: var(--font-mono); line-height: 1.2; }
+.ev-mo { font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-3); }
+.ev-body { flex: 1; min-width: 0; }
+.ev-kicker { font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-bottom: .2rem; }
+.ev-vip { display: inline-block; margin-left: .35rem; padding: .05rem .5rem; border-radius: 999px; background: var(--black); color: #fff; font-size: .58rem; letter-spacing: .08em; vertical-align: .1em; }
+.ev-body h3 { font-size: 1rem; margin-bottom: .3rem; }
+.ev-dist { font-size: .78rem; color: var(--ink-3); margin-bottom: .5rem; }
+.ev-desc { font-size: .82rem; color: var(--ink-2); line-height: 1.6; margin-bottom: .8rem; }
+.ev-foot { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; }
+.ev-cap { flex: 1; min-width: 120px; }
+.ev-cap p { font-size: .7rem; color: var(--ink-3); margin-top: .2rem; }
+.ev-bar { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.ev-bar > div { height: 100%; background: var(--accent); border-radius: 2px; }
+.ev-foot .btn-sm { width: auto; padding: .62rem 1.3rem; }
+.ev.is-past { opacity: .7; }
+.ev.is-past .ev-bar > div { background: var(--ink-3); }
+.ev-empty { padding: 2rem; color: var(--ink-3); text-align: center; border: 2px dashed var(--line); border-radius: var(--radius); }
+.ev-mine { display: flex; gap: 1rem; padding: 1rem 1.5rem; border-bottom: 1px solid var(--line); align-items: center; }
+.ev-mine:last-child { border-bottom: none; }
+.ev-mine-date { font-weight: 700; font-family: var(--font-mono); white-space: nowrap; font-size: .85rem; }
+@media (max-width: 560px) {
+  /* Date badge sits beside the title only; the description and RSVP get the full card width */
+  .event-row.ev { gap: 1rem; padding: 1.1rem; }
+  .ev .date-badge { min-width: 52px; }
+  .ev-desc, .ev-foot { margin-left: calc(-52px - 1rem); }
+  .ev-foot .btn-sm { flex: 1 1 100%; min-height: 44px; }
+  .ev-mine { padding: .9rem 1rem; gap: .75rem; }
+}

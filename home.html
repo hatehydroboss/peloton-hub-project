@@ -105,7 +105,7 @@
       <a href="catalog.html" class="btn-ghost head-more">View all products <svg class="picon arrow" aria-hidden="true"><use href="img/icons.svg#i-arrow-right"/></svg></a>
     </div>
     <div class="p-grid p-grid-4" id="new-arrivals">
-      <div class="skeleton-card p-card" aria-hidden="true"><div class="skeleton sk-img"></div><div class="sk-body"><div class="skeleton sk-line w40"></div><div class="skeleton sk-line w70"></div><div class="skeleton sk-line w30"></div></div></div><div class="skeleton-card p-card" aria-hidden="true"><div class="skeleton sk-img"></div><div class="sk-body"><div class="skeleton sk-line w40"></div><div class="skeleton sk-line w70"></div><div class="skeleton sk-line w30"></div></div></div><div class="skeleton-card p-card" aria-hidden="true"><div class="skeleton sk-img"></div><div class="sk-body"><div class="skeleton sk-line w40"></div><div class="skeleton sk-line w70"></div><div class="skeleton sk-line w30"></div></div></div>
+      <div class="skeleton-card p-card" aria-hidden="true"><div class="skeleton sk-img"></div><div class="sk-body"><div class="skeleton sk-line w40"></div><div class="skeleton sk-line w70"></div><div class="skeleton sk-line w30"></div></div></div><div class="skeleton-card p-card" aria-hidden="true"><div class="skeleton sk-img"></div><div class="sk-body"><div class="skeleton sk-line w40"></div><div class="skeleton sk-line w70"></div><div class="skeleton sk-line w30"></div></div></div><div class="skeleton-card p-card" aria-hidden="true"><div class="skeleton sk-img"></div><div class="sk-body"><div class="skeleton sk-line w40"></div><div class="skeleton sk-line w70"></div><div class="skeleton sk-line w30"></div></div></div><div class="skeleton-card p-card" aria-hidden="true"><div class="skeleton sk-img"></div><div class="sk-body"><div class="skeleton sk-line w40"></div><div class="skeleton sk-line w70"></div><div class="skeleton sk-line w30"></div></div></div>
     </div>
     <div class="center mt-2 foot-more">
       <a href="catalog.html"><button class="btn-outline" type="button">View All Products</button></a>
@@ -252,10 +252,13 @@ import { apiCatalog } from './js/firebase.js';
 
 function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1):'';}
 
-// New arrivals: 3 newest products tagged "new"
-apiCatalog({tag:'new',sort:'newest',per_page:4}).then(d=>{
-  if(!d.ok) return;
-  document.getElementById('new-arrivals').innerHTML=d.products.map(productCard).join('');
+// New arrivals: the 4 newest products tagged "new" (falls back to the newest products)
+apiCatalog({tag:'new',sort:'newest',per_page:4}).then(async d=>{
+  if(d.ok && !d.products.length) d = await apiCatalog({sort:'newest',per_page:4});
+  const grid=document.getElementById('new-arrivals');
+  grid.innerHTML = d.ok && d.products.length
+    ? d.products.map(productCard).join('')
+    : '<p style="grid-column:1/-1;color:var(--ink-3);font-size:.88rem;">Couldn’t load new arrivals. <a href="catalog.html" style="color:var(--accent);font-weight:700;">Browse the catalog</a></p>';
 });
 
 </script>
