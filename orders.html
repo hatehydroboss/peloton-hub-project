@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>PelotonHub — Order History</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%230b0b0a' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%230b0b0a'/%3E%3Cline x1='16' y1='16' x2='16' y2='3' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='26' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='6' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/shop.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#ff4d23" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="apple-touch-icon" href="img/icons/icon-192.png" />
+</head>
+<body class="orders-page">
+<a href="#main" class="skip-link">Skip to content</a>
+<nav class="navbar">
+  <a href="home.html" class="logo"><span>Peloton<span class="dot">Hub</span></span></a>
+  <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+  <ul class="nav-links" id="nav-links">
+    <li><a href="home.html">Home</a></li>
+    <li><a href="catalog.html">Catalog</a></li>
+    <li><a href="membership.html">Membership</a></li>
+    <li><a href="events.html">Events</a></li>
+    <li><a href="support.html">Support</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="cart.html" class="icon-btn" aria-label="View cart">
+      <svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-cart"/></svg>
+      <span class="badge" hidden>0</span>
+    </a>
+    <a href="auth.html" class="btn-nav" id="nav-auth-btn">Sign In</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <p class="eyebrow">Account</p>
+  <h1>Order History</h1>
+  <p>Your past reservations and completed in-store purchases.</p>
+</div>
+
+<main id="main" class="section">
+  <div class="empty-state" id="guest-view" hidden style="text-align:center;padding:3rem;">
+    <div class="er-ico lock-ico"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-lock"/></svg></div>
+    <h3>Sign in to view your order history</h3>
+    <p style="color:var(--ink-2);margin-bottom:1.5rem;">Order history is tied to your account.</p>
+    <a href="auth.html"><button class="btn-primary" type="button">Sign In</button></a>
+  </div>
+  <div id="member-view" hidden>
+  <div class="pill-group order-filters" id="order-filters" style="margin-bottom:2rem;">
+    <button class="active" data-filter="all" type="button">All</button>
+    <button data-filter="reserved" type="button">Reserved</button>
+    <button data-filter="completed" type="button">Completed</button>
+    <button data-filter="cancelled" type="button">Cancelled</button>
+  </div>
+
+  <div class="table-wrap orders-wrap" style="margin-bottom:3rem;">
+    <table class="orders-table">
+      <thead><tr><th>Order ID</th><th>Date</th><th>Items</th><th>Total</th><th>Discount</th><th>Status</th><th></th></tr></thead>
+      <tbody id="orders-tbody"><tr><td colspan="7" style="color:var(--ink-3)">Loading&hellip;</td></tr></tbody>
+    </table>
+  </div>
+
+  <div id="order-detail" class="panel" style="display:none;">
+    <div class="flex-between" style="align-items:flex-start;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--line);">
+      <div>
+        <p style="font-size:0.68rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--ink-3);margin-bottom:0.4rem;">Order Detail</p>
+        <h3 class="num" style="font-size:1.1rem;font-weight:700;" id="od-id">&mdash;</h3>
+        <p style="font-size:0.78rem;color:var(--ink-3);margin-top:0.2rem;" id="od-date"></p>
+      </div>
+      <span class="status-pill" id="od-status"></span>
+    </div>
+    <p style="font-size:0.68rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:1.5rem;color:var(--ink-3);">Items</p>
+    <div class="table-wrap od-items-wrap" style="margin-bottom:1.5rem;">
+      <table class="od-items-table">
+        <thead><tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Subtotal</th></tr></thead>
+        <tbody id="od-items"></tbody>
+      </table>
+    </div>
+    <div class="od-totals" style="text-align:right;font-size:0.88rem;line-height:2;" id="od-totals"></div>
+    <p style="font-size:0.85rem;margin-top:1rem;">Pickup: <strong id="od-pickup"></strong></p>
+    <div style="margin-top:1rem;" id="od-actions"></div>
+  </div>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-grid">
+    <div class="footer-col">
+      <h4>PelotonHub</h4>
+      <p>A web-based platform for the local cycling community &mdash; combining retail, membership, and social impact into one digital ecosystem.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Shop</h4>
+      <ul>
+        <li><a href="catalog.html?cat=Built+Bikes">Built Bikes</a></li>
+        <li><a href="catalog.html?cat=Bike+Parts+%26+Accessories">Parts &amp; Accessories</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Community</h4>
+      <ul>
+        <li><a href="events.html">Group Rides</a></li>
+        <li><a href="events.html">Charity Events</a></li>
+        <li><a href="membership.html">Membership Tiers</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Account</h4>
+      <ul>
+        <li><a href="auth.html">Sign In / Register</a></li>
+        <li><a href="profile.html">My Profile</a></li>
+        <li><a href="orders.html">Order History</a></li>
+        <li><a href="support.html">Support</a></li>
+        <li><a href="terms.html">Terms &amp; Privacy</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">&copy; 2026 PelotonHub. All rights reserved.</div>
+</footer>
+
+<script type="module">
+import { esc, peso, getUser } from './js/main.js';
+import { apiOrdersGet, apiOrderCancel } from './js/firebase.js';
+
+function cap(s){return s?s.split('_').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '):'';}
+
+let ALL_ORDERS=[], activeFilter='all';
+
+function render(){
+  let list=ALL_ORDERS.filter(o=>activeFilter==='all'||o.status===activeFilter);
+  document.getElementById('orders-tbody').innerHTML=list.map(o=>`
+    <tr class="order-row">
+      <td class="mono o-id" data-label="Order">${esc(o.id)}</td>
+      <td class="o-date" data-label="Date">${esc((o.created_at||'').slice(0,10))}</td>
+      <td class="o-items" data-label="Items">${(o.items||[]).length} item(s)</td>
+      <td class="o-total" data-label="Total">${peso(o.total)}</td>
+      <td class="o-disc" data-label="Discount">${o.discount_pct?o.discount_pct+'%':'—'}</td>
+      <td class="o-status"><span class="status-pill ${o.status}">${cap(o.status)}</span></td>
+      <td class="o-act"><button class="btn-outline btn-sm" onclick="showDetail('${esc(o.id)}')">View<span class="o-act-long"> details</span></button></td>
+    </tr>`).join('')||(ALL_ORDERS.length?'<tr><td colspan="7" style="color:var(--ink-3)">No orders match.</td></tr>':'<tr><td colspan="7" style="color:var(--ink-3)">No orders yet. <a href="catalog.html">Browse the catalog</a></td></tr>');
+}
+
+function loadOrders(){
+  apiOrdersGet().then(d=>{
+    if(d.ok){ALL_ORDERS=d.orders;render();}
+  });
+}
+
+document.querySelectorAll('#order-filters button').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('#order-filters button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter=btn.dataset.filter;
+    render();
+  });
+});
+
+function showDetail(id){
+  apiOrdersGet({id}).then(d=>{
+    if(!d.ok)return;
+    const o=d.order;
+    document.getElementById('order-detail').style.display='block';
+    document.getElementById('od-id').textContent=o.id;
+    document.getElementById('od-date').textContent='Placed '+o.created_at?.slice(0,10);
+    document.getElementById('od-status').textContent=cap(o.status);
+    document.getElementById('od-status').className='status-pill '+o.status;
+    document.getElementById('od-pickup').textContent=(o.pickup_date||'—')+' at '+(o.pickup_time||'—');
+    document.getElementById('od-items').innerHTML=(o.items||[]).map(it=>`
+      <tr><td class="i-name">${esc(it.name)}</td><td class="i-qty" data-label="Qty">${it.qty}</td><td class="i-price" data-label="Unit">${peso(it.price)}</td><td class="i-sub">${peso(it.price*it.qty)}</td></tr>`).join('');
+    const sub=o.items.reduce((s,i)=>s+i.price*i.qty,0);
+    const discAmt=Math.round(sub*o.discount_pct/100);
+    document.getElementById('od-totals').innerHTML=`
+      <div>Subtotal: ${peso(sub)}</div>
+      ${o.discount_pct?`<div>Discount (${o.discount_pct}%): -${peso(discAmt)}</div>`:''}
+      <div style="font-weight:700;font-size:1rem;">Total: ${peso(o.total)}</div>`;
+    const acts=document.getElementById('od-actions');
+    acts.innerHTML=o.status==='reserved'?`<button class="btn-outline btn-sm" onclick="cancelOrder('${esc(o.id)}')">Cancel Reservation</button>`:'';
+    document.getElementById('order-detail').scrollIntoView({behavior:'smooth',block:'start'});
+  });
+}
+
+function cancelOrder(id){
+  if(!confirm('Cancel this reservation?'))return;
+  apiOrderCancel({order_id:id}).then(d=>{if(d.ok){loadOrders();document.getElementById('order-detail').style.display='none';}else alert(d.error);});
+}
+
+// Inline onclick handlers need global access from a module
+window.showDetail=showDetail;
+window.cancelOrder=cancelOrder;
+
+const user=await getUser();
+document.getElementById(user?'member-view':'guest-view').hidden=false;
+if(user) loadOrders();
+</script>
+</body>
+</html>

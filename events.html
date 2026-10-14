@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>PelotonHub — Events</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%230b0b0a' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%230b0b0a'/%3E%3Cline x1='16' y1='16' x2='16' y2='3' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='26' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='6' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/shop.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#ff4d23" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="apple-touch-icon" href="img/icons/icon-192.png" />
+</head>
+<body>
+<a href="#main" class="skip-link">Skip to content</a>
+<nav class="navbar">
+  <a href="home.html" class="logo"><span>Peloton<span class="dot">Hub</span></span></a>
+  <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+  <ul class="nav-links" id="nav-links">
+    <li><a href="home.html">Home</a></li>
+    <li><a href="catalog.html">Catalog</a></li>
+    <li><a href="membership.html">Membership</a></li>
+    <li><a href="events.html">Events</a></li>
+    <li><a href="support.html">Support</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="cart.html" class="icon-btn" aria-label="View cart">
+      <svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-cart"/></svg>
+      <span class="badge" hidden>0</span>
+    </a>
+    <a href="auth.html" class="btn-nav" id="nav-auth-btn">Sign In</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <p class="eyebrow">Community</p>
+  <h1>Events &amp; Group Rides</h1>
+  <p>Group rides, charity events, and community drives. Register to secure your slot.</p>
+</div>
+
+<main id="main" class="section">
+  <p class="section-title">Upcoming Events</p>
+  <div id="event-list" style="border:1px solid var(--line);margin-bottom:3rem;">
+    <p style="padding:2rem;color:var(--ink-3);">Loading events&hellip;</p>
+  </div>
+
+  <div id="my-registrations" hidden>
+  <p class="section-title">My Registrations</p>
+  <div id="my-rsvp-list" style="border:1px solid var(--line);border-radius:var(--radius);"></div>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-grid">
+    <div class="footer-col">
+      <h4>PelotonHub</h4>
+      <p>A web-based platform for the local cycling community &mdash; combining retail, membership, and social impact into one digital ecosystem.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Shop</h4>
+      <ul>
+        <li><a href="catalog.html?cat=Built+Bikes">Built Bikes</a></li>
+        <li><a href="catalog.html?cat=Bike+Parts+%26+Accessories">Parts &amp; Accessories</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Community</h4>
+      <ul>
+        <li><a href="events.html">Group Rides</a></li>
+        <li><a href="events.html">Charity Events</a></li>
+        <li><a href="membership.html">Membership Tiers</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Account</h4>
+      <ul>
+        <li><a href="auth.html">Sign In / Register</a></li>
+        <li><a href="profile.html">My Profile</a></li>
+        <li><a href="orders.html">Order History</a></li>
+        <li><a href="support.html">Support</a></li>
+        <li><a href="terms.html">Terms &amp; Privacy</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">&copy; 2026 PelotonHub. All rights reserved.</div>
+</footer>
+
+<script type="module">
+import { esc, Toast, getUser } from './js/main.js';
+import { apiEventsGet, apiEventRsvp } from './js/firebase.js';
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function parseDate(s){ const d=new Date(String(s).replace(' ','T')); return isNaN(d)?new Date():d; }
+function dd(d){ return String(d.getDate()).padStart(2,'0'); }
+
+let user = null;
+
+function eventRow(ev){
+  const filled   = ev.filled|0, capacity = ev.capacity|0;
+  const pct      = capacity>0 ? Math.min(100, Math.round(filled/capacity*100)) : 0;
+  const full     = ev.spots_left===0 && !ev.rsvpd;
+  const d        = parseDate(ev.event_date);
+  const action   = user
+    ? `<button class="btn-outline btn-sm rsvp-btn" data-event-id="${esc(ev.id)}" data-rsvpd="${ev.rsvpd?'1':'0'}" ${full?'disabled':''}>${ev.rsvpd?'Cancel RSVP':(full?'Full':'RSVP Now')}</button>`
+    : `<a href="auth.html"><button class="btn-outline btn-sm">Sign in to RSVP</button></a>`;
+  return `
+    <div class="event-row" style="display:flex;gap:1.5rem;padding:1.5rem;border-bottom:1px solid var(--line);align-items:flex-start;">
+      <div class="date-badge" style="flex-shrink:0;text-align:center;min-width:52px;">
+        <div style="font-size:1.4rem;font-weight:700;font-family:var(--font-mono);">${dd(d)}</div>
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-3);">${MONTHS[d.getMonth()]}</div>
+      </div>
+      <div style="flex:1;">
+        <p style="font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:0.2rem;">${esc(ev.kicker)}</p>
+        <h3 style="font-size:1rem;margin-bottom:0.3rem;">${esc(ev.title)}</h3>
+        ${ev.dist?`<p style="font-size:0.78rem;color:var(--ink-3);margin-bottom:0.5rem;">${esc(ev.dist)}</p>`:''}
+        <p style="font-size:0.82rem;color:var(--ink-2);line-height:1.6;margin-bottom:0.8rem;">${esc(ev.description)}</p>
+        <div style="display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap;">
+          <div style="flex:1;min-width:120px;">
+            <div style="height:4px;background:var(--line);border-radius:2px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:var(--accent);border-radius:2px;"></div></div>
+            <p style="font-size:0.7rem;color:var(--ink-3);margin-top:0.2rem;">${filled}/${capacity} registered</p>
+          </div>
+          ${action}
+        </div>
+      </div>
+    </div>`;
+}
+
+function myRow(ev){
+  const d = parseDate(ev.event_date);
+  return `
+    <div style="display:flex;gap:1rem;padding:1rem 1.5rem;border-bottom:1px solid var(--line);align-items:center;">
+      <div style="font-weight:700;font-family:var(--font-mono);min-width:40px;text-align:center;">${dd(d)} ${MONTHS[d.getMonth()]}</div>
+      <div style="flex:1;">
+        <p style="font-weight:600;font-size:0.88rem;">${esc(ev.title)}</p>
+        <p style="font-size:0.75rem;color:var(--ink-3);">${esc(ev.kicker)} &middot; ${esc(ev.dist)}</p>
+      </div>
+      <span class="status-pill completed" style="font-size:0.62rem;">Registered</span>
+    </div>`;
+}
+
+async function load(){
+  const list = document.getElementById('event-list');
+  const data = await apiEventsGet();
+  if(!data.ok){ list.innerHTML='<p style="padding:2rem;color:var(--ink-3);">Could not load events.</p>'; return; }
+  list.innerHTML = data.events.map(eventRow).join('')
+    || '<p style="padding:2rem;color:var(--ink-3);">No upcoming events. Check back soon.</p>';
+
+  const mine = data.events.filter(ev=>ev.rsvpd);
+  document.getElementById('my-registrations').hidden = !(user && mine.length);
+  document.getElementById('my-rsvp-list').innerHTML = mine.map(myRow).join('');
+
+  list.querySelectorAll('.rsvp-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      btn.disabled=true;
+      const res = await apiEventRsvp({event_id:btn.dataset.eventId});
+      if(res.ok){ load(); }
+      else { Toast.show(res.error); btn.disabled=false; }
+    });
+  });
+}
+
+
+user = await getUser();
+load();
+</script>
+</body>
+</html>

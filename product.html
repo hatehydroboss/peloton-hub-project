@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>PelotonHub — Product</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%230b0b0a' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%230b0b0a'/%3E%3Cline x1='16' y1='16' x2='16' y2='3' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='26' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='6' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/shop.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#ff4d23" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="apple-touch-icon" href="img/icons/icon-192.png" />
+</head>
+<body>
+<a href="#main" class="skip-link">Skip to content</a>
+<nav class="navbar">
+  <a href="home.html" class="logo"><span>Peloton<span class="dot">Hub</span></span></a>
+  <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+  <ul class="nav-links" id="nav-links">
+    <li><a href="home.html">Home</a></li>
+    <li><a href="catalog.html">Catalog</a></li>
+    <li><a href="membership.html">Membership</a></li>
+    <li><a href="events.html">Events</a></li>
+    <li><a href="support.html">Support</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="cart.html" class="icon-btn" aria-label="View cart">
+      <svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-cart"/></svg>
+      <span class="badge" hidden>0</span>
+    </a>
+    <a href="auth.html" class="btn-nav" id="nav-auth-btn">Sign In</a>
+  </div>
+</nav>
+
+<main id="main" class="section">
+  <p style="color:var(--ink-3);padding:2rem 0;">Loading&hellip;</p>
+</main>
+
+<footer>
+  <div class="footer-grid">
+    <div class="footer-col">
+      <h4>PelotonHub</h4>
+      <p>A web-based platform for the local cycling community &mdash; combining retail, membership, and social impact into one digital ecosystem.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Shop</h4>
+      <ul>
+        <li><a href="catalog.html?cat=Built+Bikes">Built Bikes</a></li>
+        <li><a href="catalog.html?cat=Bike+Parts+%26+Accessories">Parts &amp; Accessories</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Community</h4>
+      <ul>
+        <li><a href="events.html">Group Rides</a></li>
+        <li><a href="events.html">Charity Events</a></li>
+        <li><a href="membership.html">Membership Tiers</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Account</h4>
+      <ul>
+        <li><a href="auth.html">Sign In / Register</a></li>
+        <li><a href="profile.html">My Profile</a></li>
+        <li><a href="orders.html">Order History</a></li>
+        <li><a href="support.html">Support</a></li>
+        <li><a href="terms.html">Terms &amp; Privacy</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">&copy; 2026 PelotonHub. All rights reserved.</div>
+</footer>
+
+<script type="module">
+import { esc, peso, getUser, refreshCartBadge, flyToCart, openSignIn } from './js/main.js';
+import { apiCatalog, apiCartAdd, apiWishlistGet, apiWishlistToggle, apiReviewSubmit } from './js/firebase.js';
+
+function showMsg(el,type,text){if(!el)return;el.textContent=text;el.className='form-msg show '+type;clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),4500);}
+function stars(n){n=Math.max(0,Math.min(5,Math.round(n)));return '★'.repeat(n)+'☆'.repeat(5-n);}
+function initials(name){return String(name||'?').replace(/ —.*$/,'').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();}
+
+const id = new URLSearchParams(location.search).get('id');
+if(!id) location.replace('catalog.html');
+
+const [user, res] = await Promise.all([getUser(), apiCatalog({id})]);
+if(!res.ok){
+  // A missing product goes back to the catalog; a network hiccup offers a retry instead
+  if(res.error === 'Product not found') location.replace('catalog.html');
+  else document.getElementById('main').innerHTML = `
+    <div class="empty-results">
+      <div class="er-ico"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-offline"/></svg></div>
+      <h3>Couldn't load this product</h3>
+      <p>Check your connection and try again.</p>
+      <button class="btn-primary" type="button" onclick="location.reload()">Try again</button>
+    </div>`;
+  throw new Error(res.error);
+}
+const p = res.product;
+document.title = 'PelotonHub — ' + p.name;
+
+let inWishlist = false;
+if(user){
+  const w = await apiWishlistGet();
+  inWishlist = (w.wishlist||[]).some(x=>x.product_id===p.id);
+}
+
+const specs   = Array.isArray(p.specs) ? p.specs : [];
+const sizes   = Array.isArray(p.sizes) ? p.sizes : [];
+const reviews = p.reviews || [];
+const avg     = reviews.length ? reviews.reduce((s,r)=>s+(r.rating||0),0)/reviews.length : 0;
+const off     = p.old_price && p.old_price > p.price ? Math.round((1 - p.price/p.old_price)*100) : 0;
+const qty     = p.stock_qty;
+let size      = sizes.includes(p.default_size) ? p.default_size : (sizes[0] || null);
+
+const stockHtml = !p.in_stock ? '<span class="pd-stock out">Out of stock</span>'
+  : (qty != null && qty <= 5) ? `<span class="pd-stock low">Only ${qty} left — reserve soon</span>`
+  : '<span class="pd-stock">In stock, ready for pickup</span>';
+
+let buyHtml = '';
+if(p.in_stock){
+  buyHtml = user
+    ? `<button class="btn-primary" id="add-to-cart-btn" type="button">Add to Cart</button>`
+    : `<button class="btn-primary" type="button" data-signin>Sign in to add to cart</button>`;
+}
+
+document.getElementById('main').innerHTML = `
+  <nav class="pd-crumbs" aria-label="Breadcrumb">
+    <a href="catalog.html">Catalog</a><span>/</span>
+    <a href="catalog.html?sub=${encodeURIComponent(p.sub_category)}">${esc(p.sub_category)}</a><span>/</span>
+    <span>${esc(p.name)}</span>
+  </nav>
+
+  <div class="pd-grid">
+    <div class="pd-media">
+      ${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" id="pd-img" />` : `<span class="p-emoji" id="pd-img"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-bike"/></svg></span>`}
+    </div>
+
+    <div class="pd-info">
+      <div class="pd-badges">
+        ${p.tag?`<span class="p-badge ${esc(p.tag)}">${esc(p.tag)}</span>`:''}
+        ${off?`<span class="p-badge off">-${off}%</span>`:''}
+      </div>
+      <p class="pd-brand">${esc(p.brand)}</p>
+      <h1 class="pd-title">${esc(p.name)}</h1>
+      ${reviews.length?`<div class="pd-rating"><span class="stars">${stars(avg)}</span><span>${avg.toFixed(1)} · ${reviews.length} review${reviews.length===1?'':'s'}</span></div>`:''}
+      <p class="pd-short">${esc(p.short_desc)}</p>
+
+      <div class="pd-price">
+        <span class="now">${peso(p.price)}</span>
+        ${p.old_price?`<span class="was">${peso(p.old_price)}</span>`:''}
+        ${off?`<span class="save">Save ${peso(p.old_price - p.price)}</span>`:''}
+      </div>
+      ${stockHtml}
+
+      ${sizes.length?`
+      <p class="pd-label">Size</p>
+      <div class="pd-sizes" role="radiogroup" aria-label="Size">
+        ${sizes.map(sz=>`<button type="button" class="pd-size${sz===size?' active':''}" data-size="${esc(sz)}" role="radio" aria-checked="${sz===size}">${esc(sz)}</button>`).join('')}
+      </div>`:''}
+
+      <div class="pd-actions">
+        ${buyHtml}
+        ${user?`<button class="btn-outline" id="wishlist-btn" type="button">${inWishlist?`<svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-heart-fill"/></svg> Saved to wishlist`:`<svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-heart"/></svg> Add to wishlist`}</button>`:''}
+      </div>
+      <div id="cart-msg" class="form-msg" aria-live="polite"></div>
+
+      <div class="pd-perks">
+        <div><span class="ico"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-bag"/></svg></span><span><b>Reserve online,</b> pay in-store at pickup</span></div>
+        <div><span class="ico"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-clock"/></svg></span><span>Held for <b>48 hours</b> after you reserve</span></div>
+        <div><span class="ico"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-trophy"/></svg></span><span><b>Member discount</b> applied automatically</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pd-sections">
+    <section class="pd-card">
+      <h2>About this product</h2>
+      <p class="pd-desc">${esc(p.description).replace(/\n/g,'<br />')}</p>
+    </section>
+    ${specs.length?`
+    <section class="pd-card">
+      <h2>Specifications</h2>
+      <dl class="pd-specs">
+        ${specs.map(([k,v])=>`<div class="pd-spec"><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}
+      </dl>
+    </section>`:''}
+  </div>
+
+  <section>
+    <div class="pd-reviews-head">
+      <h2 style="font-size:1.4rem;">Customer reviews</h2>
+      ${reviews.length?`<div class="pd-score"><span class="big">${avg.toFixed(1)}</span><div><span class="stars">${stars(avg)}</span><small>${reviews.length} review${reviews.length===1?'':'s'}</small></div></div>`:''}
+    </div>
+    ${!reviews.length
+      ? '<p style="color:var(--ink-3);font-size:.88rem;margin-bottom:1.5rem;">No reviews yet — be the first to share your experience.</p>'
+      : `<div class="pd-review-list">
+        ${reviews.map(rv=>`
+        <article class="pd-review">
+          <div class="pd-review-top">
+            <span class="pd-avatar">${esc(initials(rv.author))}</span>
+            <div><strong>${esc(rv.author)}</strong><span class="stars">${stars(rv.rating)}</span></div>
+          </div>
+          <p>${esc(rv.body)}</p>
+        </article>`).join('')}
+      </div>`}
+
+    ${user?`
+    <div class="pd-card pd-write">
+      <h2>Write a review</h2>
+      <div class="pd-star-pick" id="star-pick" role="radiogroup" aria-label="Rating">
+        ${[1,2,3,4,5].map(n=>`<button type="button" data-n="${n}" class="on" aria-label="${n} star${n>1?'s':''}">★</button>`).join('')}
+      </div>
+      <div class="form-group">
+        <label for="review-body">Your review</label>
+        <textarea id="review-body" rows="3" placeholder="How does it ride? Would you recommend it?"></textarea>
+      </div>
+      <p class="form-msg" id="review-msg" aria-live="polite"></p>
+      <button class="btn-primary btn-sm" id="review-submit" type="button">Submit review</button>
+    </div>`:`<p style="font-size:.86rem;color:var(--ink-2);"><a href="#" data-signin style="color:var(--accent);font-weight:700;">Sign in</a> to write a review.</p>`}
+  </section>
+`;
+
+// Size buttons
+document.querySelectorAll('.pd-size').forEach(b=>b.addEventListener('click',()=>{
+  size=b.dataset.size;
+  document.querySelectorAll('.pd-size').forEach(x=>{ const on=x===b; x.classList.toggle('active',on); x.setAttribute('aria-checked',on); });
+}));
+
+if(user && p.in_stock){
+  document.getElementById('add-to-cart-btn').addEventListener('click', async ()=>{
+    const btn = document.getElementById('add-to-cart-btn');
+    btn.classList.add('is-loading'); btn.textContent = 'Adding…';
+    const data = await apiCartAdd({product_id:p.id,qty:1,size});
+    btn.classList.remove('is-loading'); btn.textContent = 'Add to Cart';
+    const msg  = document.getElementById('cart-msg');
+    if(data.ok){
+      showMsg(msg,'success','Added to cart!');
+      flyToCart(document.getElementById('pd-img'));
+      setTimeout(refreshCartBadge, 650);   // badge bumps as the image lands
+    } else showMsg(msg,'error',data.error||'Could not add to cart');
+  });
+}
+
+if(user){
+  document.getElementById('wishlist-btn').addEventListener('click', async ()=>{
+    const data = await apiWishlistToggle({product_id:p.id});
+    if(data.ok){
+      inWishlist=data.in_wishlist;
+      const wb=document.getElementById('wishlist-btn');
+      wb.innerHTML=inWishlist?'<svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-heart-fill"/></svg> Saved to wishlist':'<svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-heart"/></svg> Add to wishlist';
+      wb.classList.remove('pulse'); void wb.offsetWidth; wb.classList.add('pulse');
+    }
+  });
+
+  let rating = 5;
+  document.querySelectorAll('#star-pick button').forEach(b=>b.addEventListener('click',()=>{
+    rating = Number(b.dataset.n);
+    document.querySelectorAll('#star-pick button').forEach(x=>x.classList.toggle('on', Number(x.dataset.n) <= rating));
+  }));
+  document.getElementById('review-submit').addEventListener('click', async ()=>{
+    const body   = document.getElementById('review-body').value.trim();
+    const msg    = document.getElementById('review-msg');
+    if(!body) return showMsg(msg,'error','Please write a review.');
+    const data = await apiReviewSubmit({product_id:p.id,rating,body});
+    if(data.ok){showMsg(msg,'success','Thanks! Your review is posted.');document.getElementById('review-body').value='';setTimeout(()=>location.reload(),1200);}
+    else showMsg(msg,'error',data.error);
+  });
+}
+</script>
+</body>
+</html>

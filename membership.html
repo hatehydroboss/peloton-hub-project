@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>PelotonHub — Membership</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%230b0b0a' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%230b0b0a'/%3E%3Cline x1='16' y1='16' x2='16' y2='3' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='26' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='6' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/shop.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#ff4d23" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="apple-touch-icon" href="img/icons/icon-192.png" />
+</head>
+<body>
+<a href="#main" class="skip-link">Skip to content</a>
+<nav class="navbar">
+  <a href="home.html" class="logo"><span>Peloton<span class="dot">Hub</span></span></a>
+  <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+  <ul class="nav-links" id="nav-links">
+    <li><a href="home.html">Home</a></li>
+    <li><a href="catalog.html">Catalog</a></li>
+    <li><a href="membership.html">Membership</a></li>
+    <li><a href="events.html">Events</a></li>
+    <li><a href="support.html">Support</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="cart.html" class="icon-btn" aria-label="View cart">
+      <svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-cart"/></svg>
+      <span class="badge" hidden>0</span>
+    </a>
+    <a href="auth.html" class="btn-nav" id="nav-auth-btn">Sign In</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <p class="eyebrow">Loyalty Program</p>
+  <h1>3-Tier Membership</h1>
+  <p>Escalating rewards, discounts, and perks designed for every kind of rider.</p>
+</div>
+
+<main id="main" class="section">
+  <div class="tiers" style="margin-bottom:4rem;">
+      <div class="tier-card" data-tier-card="Spoke">
+        <p class="tier-label">Entry Level</p><h3>Spoke</h3>
+        <p class="tier-sub">For riders just getting started.</p>
+        <div class="price-tag">Free <span>forever</span></div>
+        <hr class="divider-line" />
+        <ul>
+          <li><span><span data-disc="Spoke">5</span>% off every reservation</span></li>
+          <li>Join community group rides</li>
+          <li>RSVP to charity events</li>
+          <li>Digital member ID for in-store pickup</li>
+        </ul>
+        <a href="auth.html" data-register class="tier-join"><button class="btn-tier" type="button">Join Free</button></a>
+      </div>
+      <div class="tier-card featured" data-tier-card="Chain">
+        <p class="tier-label">Most Popular</p><h3>Chain</h3>
+        <p class="tier-sub">For the regular weekend rider.</p>
+        <div class="price-tag">&#8369;499 <span>/ month, paid in-store</span></div>
+        <hr class="divider-line" />
+        <ul>
+          <li><span><span data-disc="Chain">10</span>% off every reservation</span></li>
+          <li>Priority event registration</li>
+          <li>1 free basic tune-up per year</li>
+          <li>Chain-member promotions</li>
+        </ul>
+        <a href="auth.html?tier=Chain" data-register class="tier-join"><button class="btn-tier" type="button">Join, then go Chain</button></a>
+      </div>
+      <div class="tier-card" data-tier-card="Peloton">
+        <p class="tier-label">Premium</p><h3>Peloton</h3>
+        <p class="tier-sub">For the serious cyclist.</p>
+        <div class="price-tag">&#8369;999 <span>/ month, paid in-store</span></div>
+        <hr class="divider-line" />
+        <ul>
+          <li><span><span data-disc="Peloton">20</span>% off every reservation</span></li>
+          <li>Early access to new bikes &amp; gear</li>
+          <li>Unlimited in-store flat tire fixes</li>
+          <li>Private member rides &amp; events</li>
+          <li>Priority support</li>
+        </ul>
+        <a href="auth.html?tier=Peloton" data-register class="tier-join"><button class="btn-tier" type="button">Join, then go Peloton</button></a>
+      </div>
+    </div>
+
+  <!-- COMPARISON TABLE -->
+  <p class="section-title">Full Tier Comparison</p>
+  <div class="table-wrap compare-wrap">
+    <table class="compare-table">
+      <thead><tr><th>Feature</th><th>Spoke</th><th>Chain</th><th>Peloton</th></tr></thead>
+      <tbody>
+        <tr><td>Monthly fee</td><td>Free</td><td>&#8369;499 (paid in-store)</td><td>&#8369;999 (paid in-store)</td></tr>
+        <tr><td>Member discount</td><td><span data-disc="Spoke">5</span>% off every reservation</td><td><span data-disc="Chain">10</span>% off every reservation</td><td><span data-disc="Peloton">20</span>% off every reservation</td></tr>
+        <tr><td>Group rides &amp; charity events</td><td><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-check"/></svg></td><td><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-check"/></svg> + priority registration</td><td><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-check"/></svg> + private member rides</td></tr>
+        <tr><td>Tune-ups &amp; repairs</td><td class="text-ink-3">&mdash;</td><td>1 basic tune-up per year</td><td>Unlimited flat tire fixes</td></tr>
+        <tr><td>Early access to new bikes &amp; gear</td><td class="text-ink-3">&mdash;</td><td class="text-ink-3">&mdash;</td><td><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-check"/></svg></td></tr>
+        <tr><td>Member promotions</td><td class="text-ink-3">&mdash;</td><td><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-check"/></svg></td><td><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-check"/></svg></td></tr>
+        <tr><td>Support</td><td>Standard</td><td>Standard</td><td>Priority</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tier-howto"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-bulb"/></svg> <strong>How upgrading works:</strong> create a free account, then ask at the shop counter (or send a request from the tier card) &mdash; paid tiers are billed in-store and your discount switches on as soon as the shop activates it.</p>
+</main>
+
+<footer>
+  <div class="footer-grid">
+    <div class="footer-col">
+      <h4>PelotonHub</h4>
+      <p>A web-based platform for the local cycling community &mdash; combining retail, membership, and social impact into one digital ecosystem.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Shop</h4>
+      <ul>
+        <li><a href="catalog.html?cat=Built+Bikes">Built Bikes</a></li>
+        <li><a href="catalog.html?cat=Bike+Parts+%26+Accessories">Parts &amp; Accessories</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Community</h4>
+      <ul>
+        <li><a href="events.html">Group Rides</a></li>
+        <li><a href="events.html">Charity Events</a></li>
+        <li><a href="membership.html">Membership Tiers</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Account</h4>
+      <ul>
+        <li><a href="auth.html">Sign In / Register</a></li>
+        <li><a href="profile.html">My Profile</a></li>
+        <li><a href="orders.html">Order History</a></li>
+        <li><a href="support.html">Support</a></li>
+        <li><a href="terms.html">Terms &amp; Privacy</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">&copy; 2026 PelotonHub. All rights reserved.</div>
+</footer>
+<script type="module">
+// Tier cards (live discounts + buttons) are handled by js/main.js
+import './js/main.js';
+</script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>PelotonHub — Support</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%230b0b0a' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%230b0b0a'/%3E%3Cline x1='16' y1='16' x2='16' y2='3' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='26' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='6' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/shop.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#ff4d23" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="apple-touch-icon" href="img/icons/icon-192.png" />
+</head>
+<body>
+<a href="#main" class="skip-link">Skip to content</a>
+<nav class="navbar">
+  <a href="home.html" class="logo"><span>Peloton<span class="dot">Hub</span></span></a>
+  <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+  <ul class="nav-links" id="nav-links">
+    <li><a href="home.html">Home</a></li>
+    <li><a href="catalog.html">Catalog</a></li>
+    <li><a href="membership.html">Membership</a></li>
+    <li><a href="events.html">Events</a></li>
+    <li><a href="support.html">Support</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="cart.html" class="icon-btn" aria-label="View cart">
+      <svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-cart"/></svg>
+      <span class="badge" hidden>0</span>
+    </a>
+    <a href="auth.html" class="btn-nav" id="nav-auth-btn">Sign In</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <p class="eyebrow">Help</p>
+  <h1>Support</h1>
+  <p>Have a question or concern? Send us a message and we&rsquo;ll get back to you.</p>
+</div>
+
+<main id="main" class="section">
+  <div class="support-layout">
+  <div class="form-card">
+    <h2>Contact Us</h2>
+    <div class="form-row">
+      <div class="form-group"><label for="s-name">Your Name</label><input id="s-name" type="text" /></div>
+      <div class="form-group"><label for="s-email">Email</label><input id="s-email" type="email" /></div>
+    </div>
+    <div class="form-group">
+      <label for="s-topic">Topic</label>
+      <select id="s-topic">
+        <option>General Inquiry</option>
+        <option>Order / Reservation</option>
+        <option>Product Question</option>
+        <option>Membership</option>
+        <option>Events</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="form-group"><label for="s-orderref">Order Reference (optional)</label><input id="s-orderref" type="text" placeholder="e.g. PH-20260818-1234" /></div>
+    <div class="form-group"><label for="s-message">Message</label><textarea id="s-message" rows="5" placeholder="Describe your question or concern&hellip;"></textarea></div>
+    <p class="form-msg" id="s-msg" aria-live="polite"></p>
+    <button class="btn-full" id="s-submit" type="button">Send Message</button>
+  </div>
+  <aside class="help-panel">
+    <div class="help-card">
+      <span class="help-ico"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-clock"/></svg></span>
+      <div><strong>We reply within 1 business day</strong><p>Replies go to the email you enter here.</p></div>
+    </div>
+    <div class="help-card">
+      <span class="help-ico"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-receipt"/></svg></span>
+      <div><strong>Question about a reservation?</strong><p>Add your Reservation ID (e.g. PH-20261014-1234) so we can find it fast. You can also cancel it yourself in <a href="orders.html">My Orders</a>.</p></div>
+    </div>
+    <div class="help-card">
+      <span class="help-ico"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-trophy"/></svg></span>
+      <div><strong>Membership upgrades</strong><p>Chain and Peloton are activated and billed in-store. Compare tiers on the <a href="membership.html">Membership</a> page.</p></div>
+    </div>
+    <div class="help-card">
+      <span class="help-ico"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-calendar"/></svg></span>
+      <div><strong>Group rides &amp; events</strong><p>RSVP or cancel any time on the <a href="events.html">Events</a> page.</p></div>
+    </div>
+  </aside>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-grid">
+    <div class="footer-col">
+      <h4>PelotonHub</h4>
+      <p>A web-based platform for the local cycling community &mdash; combining retail, membership, and social impact into one digital ecosystem.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Shop</h4>
+      <ul>
+        <li><a href="catalog.html?cat=Built+Bikes">Built Bikes</a></li>
+        <li><a href="catalog.html?cat=Bike+Parts+%26+Accessories">Parts &amp; Accessories</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Community</h4>
+      <ul>
+        <li><a href="events.html">Group Rides</a></li>
+        <li><a href="events.html">Charity Events</a></li>
+        <li><a href="membership.html">Membership Tiers</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Account</h4>
+      <ul>
+        <li><a href="auth.html">Sign In / Register</a></li>
+        <li><a href="profile.html">My Profile</a></li>
+        <li><a href="orders.html">Order History</a></li>
+        <li><a href="support.html">Support</a></li>
+        <li><a href="terms.html">Terms &amp; Privacy</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">&copy; 2026 PelotonHub. All rights reserved.</div>
+</footer>
+<script type="module">
+import { getUser } from './js/main.js';
+import { apiSupportSubmit } from './js/firebase.js';
+
+function showMsg(el,type,text){if(!el)return;el.textContent=text;el.className='form-msg show '+type;clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),6000);}
+
+// Arrived from a tier card ("Request upgrade"): pre-fill topic and message
+{
+  const q = new URLSearchParams(location.search);
+  const topic = q.get('topic'), tier = q.get('tier');
+  if (topic) { const sel = document.getElementById('s-topic'); if ([...sel.options].some(o => o.value === topic || o.text === topic)) sel.value = topic; }
+  if (tier && ['Spoke','Chain','Peloton'].includes(tier))
+    document.getElementById('s-message').value = `Hi! I'd like to switch my membership to ${tier}. When can I activate it at the shop?`;
+}
+
+// Pre-fill name/email for signed-in members
+getUser().then(u=>{
+  if(!u) return;
+  document.getElementById('s-name').value  = u.name  || '';
+  document.getElementById('s-email').value = u.email || '';
+});
+
+document.getElementById('s-submit').addEventListener('click', async ()=>{
+  const name    = document.getElementById('s-name').value.trim();
+  const email   = document.getElementById('s-email').value.trim();
+  const topic   = document.getElementById('s-topic').value;
+  const orderRef= document.getElementById('s-orderref').value.trim();
+  const message = document.getElementById('s-message').value.trim();
+  const msg     = document.getElementById('s-msg');
+  if(!name||!email||!message) return showMsg(msg,'error','Name, email and message are required.');
+  const data = await apiSupportSubmit({name,email,topic,order_ref:orderRef,message});
+  if(data.ok){
+    showMsg(msg,'success',data.message);
+    document.getElementById('s-message').value='';
+    document.getElementById('s-orderref').value='';
+  } else showMsg(msg,'error',data.error);
+});
+</script>
+</body>
+</html>

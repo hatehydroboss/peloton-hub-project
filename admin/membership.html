@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PelotonHub Admin — Membership Tiers</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%230b0b0a' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%230b0b0a'/%3E%3Cline x1='16' y1='16' x2='16' y2='3' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='26' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='6' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/styles.css" /><link rel="stylesheet" href="css/admin.css" />
+  <style>
+    .tier-edit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.1rem;}
+    .tier-edit-card{border:1px solid var(--line);border-radius:var(--radius-lg);padding:1.5rem;background:var(--white);}
+    .tier-edit-card.Peloton{background:var(--black);color:var(--white);border-color:var(--black);}
+    .tier-edit-card.Peloton .form-group label{color:rgba(255,255,255,0.6);}
+    .tier-edit-card.Peloton .form-group input{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.2);color:var(--white);}
+    .tier-edit-card h3{font-family:var(--font-display);font-size:1.2rem;margin-bottom:0.3rem;}
+    .tier-edit-card .member-count{font-size:0.76rem;color:var(--ink-3);margin-bottom:1.2rem;}
+    .tier-edit-card.Peloton .member-count{color:rgba(255,255,255,0.55);}
+    .discount-input-wrap{display:flex;align-items:center;gap:0.5rem;}
+    .discount-input-wrap input{width:90px;}
+  </style>
+</head>
+<body class="admin-body">
+<button class="admin-sidebar-toggle" id="admin-sidebar-toggle" aria-label="Toggle menu">&#9776;</button>
+<div class="admin-shell">
+<aside class="admin-sidebar" id="admin-sidebar">
+  <div class="admin-sidebar-brand">
+    <span>Peloton<span class="dot">Hub</span></span><span class="tag-admin">Admin</span>
+  </div>
+  <ul class="admin-nav">
+    <li class="admin-nav-label">Overview</li>
+    <li><a href="index.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-sliders"/></svg></span> Dashboard</a></li>
+    <li class="admin-nav-label">Catalog</li>
+    <li><a href="products.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-bike"/></svg></span> Products</a></li>
+    <li><a href="stock.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-clipboard"/></svg></span> Stock Management</a></li>
+    <li><a href="orders.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-receipt"/></svg></span> Orders</a></li>
+    <li class="admin-nav-label">Community</li>
+    <li><a href="customers.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-user"/></svg></span> Customers</a></li>
+    <li><a href="events.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-calendar"/></svg></span> Events &amp; RSVPs</a></li>
+    <li><a href="membership.html" class="active"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-trophy"/></svg></span> Membership Tiers</a></li>
+    <li class="admin-nav-label">Support</li>
+    <li><a href="messages.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-bulb"/></svg></span> Messages</a></li>
+  </ul>
+  <div class="admin-sidebar-foot">
+    <div class="admin-avatar" id="admin-initials">SA</div>
+    <div class="who">
+      <div class="name" id="admin-name">Shop Admin</div>
+      <div class="role">Administrator</div>
+    </div>
+    <button class="admin-logout-btn" id="admin-logout-btn" type="button" aria-label="Log out" title="Log out">&#10148;</button>
+  </div>
+</aside>
+
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <div><h1>Membership Tiers</h1><p class="sub">Adjust discount percentages for each membership tier</p></div>
+      <div class="admin-topbar-right">
+        <a href="../membership.html" class="btn-nav" style="background:var(--black);" target="_blank" rel="noopener">Preview Page &rarr;</a>
+      </div>
+    </header>
+    <main class="admin-content">
+      <div class="admin-card">
+        <div class="admin-card-head">
+          <h2>Tier Discounts</h2>
+        </div>
+        <div class="tier-edit-grid">
+          <div class="tier-edit-card Spoke">
+            <h3>Spoke</h3>
+            <p class="member-count"><span id="tier-count-Spoke">0</span> member(s) &middot; Free tier &mdash; earns points on every purchase</p>
+            <div class="form-group" style="margin-bottom:0;">
+              <label>Discount Percentage</label>
+              <div class="discount-input-wrap">
+                <input type="number" min="0" max="100" id="tier-input-Spoke" value="5" />
+                <span>%</span>
+              </div>
+            </div>
+          </div>
+          <div class="tier-edit-card Chain">
+            <h3>Chain</h3>
+            <p class="member-count"><span id="tier-count-Chain">0</span> member(s) &middot; Priority reservations + free annual tune-up</p>
+            <div class="form-group" style="margin-bottom:0;">
+              <label>Discount Percentage</label>
+              <div class="discount-input-wrap">
+                <input type="number" min="0" max="100" id="tier-input-Chain" value="10" />
+                <span>%</span>
+              </div>
+            </div>
+          </div>
+          <div class="tier-edit-card Peloton">
+            <h3>Peloton</h3>
+            <p class="member-count"><span id="tier-count-Peloton">0</span> member(s) &middot; VIP event access + free tune-ups + early restock</p>
+            <div class="form-group" style="margin-bottom:0;">
+              <label>Discount Percentage</label>
+              <div class="discount-input-wrap">
+                <input type="number" min="0" max="100" id="tier-input-Peloton" value="20" />
+                <span>%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions" style="margin-top:1.4rem;">
+          <button class="btn-primary btn-sm" id="tier-save-btn" type="button">Save Changes</button>
+        </div>
+        <p class="form-msg" id="tier-msg" aria-live="polite"></p>
+      </div>
+
+      <div class="admin-card">
+        <div class="admin-card-head"><h2>Members by Tier</h2></div>
+        <div id="tier-bars"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div id="ph-toast" aria-live="polite"></div>
+<script>
+function toast(m){const t=document.getElementById('ph-toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+function showMsg(el,type,text){if(!el)return;el.textContent=text;el.className='form-msg show '+type;clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),4500);}
+
+document.addEventListener('admin-ready',()=>{
+  const toggle=document.getElementById('admin-sidebar-toggle');
+  const sidebar=document.getElementById('admin-sidebar');
+  if(toggle&&sidebar) toggle.addEventListener('click',()=>sidebar.classList.toggle('open'));
+
+  // Current discounts
+  FB.apiAdminSettingsGet().then(d=>{
+    if(!d.ok) return;
+    ['Spoke','Chain','Peloton'].forEach(t=>{
+      const v=d.settings['tier_discount_'+t];
+      if(v!=null) document.getElementById('tier-input-'+t).value=v;
+    });
+  });
+
+  // Member counts per tier
+  FB.apiAdminCustomersGet().then(d=>{
+    if(!d.ok) return;
+    const counts={};
+    (d.tier_counts||[]).forEach(r=>counts[r.tier]=r.cnt);
+    const total=Object.values(counts).reduce((a,b)=>a+b,0)||1;
+    document.getElementById('tier-bars').innerHTML=['Spoke','Chain','Peloton'].map(t=>{
+      const cnt=counts[t]||0, pct=Math.round(cnt/total*100);
+      document.getElementById('tier-count-'+t).textContent=cnt;
+      return `<div class="hbar-row">
+          <div class="hbar-label">${t}</div>
+          <div class="hbar-track"><div class="hbar-fill" style="width:${pct}%;"></div></div>
+          <div class="hbar-val">${cnt} (${pct}%)</div>
+        </div>`;
+    }).join('');
+  });
+
+  document.getElementById('tier-save-btn').addEventListener('click',()=>{
+    const payload={
+      action:'save',
+      tier_discount_Spoke:   parseInt(document.getElementById('tier-input-Spoke').value)||0,
+      tier_discount_Chain:   parseInt(document.getElementById('tier-input-Chain').value)||0,
+      tier_discount_Peloton: parseInt(document.getElementById('tier-input-Peloton').value)||0,
+    };
+    FB.apiAdminSettingsSave(payload)
+      .then(d=>{
+        if(d.ok){showMsg(document.getElementById('tier-msg'),'success','Tier discounts updated.');toast('Membership tiers saved');}
+        else showMsg(document.getElementById('tier-msg'),'error',d.error);
+      });
+  });
+});
+</script>
+<script type="module" src="js/admin-common.js"></script>
+</body>
+</html>

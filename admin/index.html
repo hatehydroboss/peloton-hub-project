@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PelotonHub Admin — Dashboard</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%230b0b0a' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%230b0b0a'/%3E%3Cline x1='16' y1='16' x2='16' y2='3' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='26' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='6' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/styles.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body class="admin-body">
+
+<button class="admin-sidebar-toggle" id="admin-sidebar-toggle" aria-label="Toggle menu">&#9776;</button>
+<div class="admin-shell">
+<aside class="admin-sidebar" id="admin-sidebar">
+  <div class="admin-sidebar-brand">
+    <span>Peloton<span class="dot">Hub</span></span><span class="tag-admin">Admin</span>
+  </div>
+  <ul class="admin-nav">
+    <li class="admin-nav-label">Overview</li>
+    <li><a href="index.html" class="active"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-sliders"/></svg></span> Dashboard</a></li>
+    <li class="admin-nav-label">Catalog</li>
+    <li><a href="products.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-bike"/></svg></span> Products</a></li>
+    <li><a href="stock.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-clipboard"/></svg></span> Stock Management</a></li>
+    <li><a href="orders.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-receipt"/></svg></span> Orders</a></li>
+    <li class="admin-nav-label">Community</li>
+    <li><a href="customers.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-user"/></svg></span> Customers</a></li>
+    <li><a href="events.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-calendar"/></svg></span> Events &amp; RSVPs</a></li>
+    <li><a href="membership.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-trophy"/></svg></span> Membership Tiers</a></li>
+    <li class="admin-nav-label">Support</li>
+    <li><a href="messages.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-bulb"/></svg></span> Messages</a></li>
+  </ul>
+  <div class="admin-sidebar-foot">
+    <div class="admin-avatar" id="admin-initials">SA</div>
+    <div class="who">
+      <div class="name" id="admin-name">Shop Admin</div>
+      <div class="role">Administrator</div>
+    </div>
+    <button class="admin-logout-btn" id="admin-logout-btn" type="button" aria-label="Log out" title="Log out">&#10148;</button>
+  </div>
+</aside>
+
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <div>
+        <h1>Dashboard</h1>
+        <p class="sub">Here&rsquo;s what&rsquo;s happening at the shop today.</p>
+      </div>
+      <div class="admin-topbar-right">
+        <a href="../home.html" class="btn-nav" style="background:var(--black);" target="_blank" rel="noopener">View Storefront</a>
+      </div>
+    </header>
+
+    <main class="admin-content">
+      <div class="stat-grid">
+        <div class="stat-card accent">
+          <div class="stat-icon">&#8369;</div>
+          <div class="stat-label">Revenue (30 days)</div>
+          <div class="stat-value" id="stat-revenue">&#8369;0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-receipt"/></svg></div>
+          <div class="stat-label">Pending Reservations</div>
+          <div class="stat-value" id="stat-pending">0</div>
+        </div>
+        <div class="stat-card lime">
+          <div class="stat-icon"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-user"/></svg></div>
+          <div class="stat-label">Active Members</div>
+          <div class="stat-value" id="stat-members">0</div>
+        </div>
+        <div class="stat-card dark">
+          <div class="stat-icon"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-clipboard"/></svg></div>
+          <div class="stat-label">Low / Out of Stock</div>
+          <div class="stat-value" id="stat-lowstock">0</div>
+        </div>
+      </div>
+
+      <div class="two-col-cards">
+        <div>
+          <div class="admin-card">
+            <div class="admin-card-head"><h2>Orders, Last 7 Days</h2></div>
+            <div class="bar-chart" id="orders-bar-chart"></div>
+          </div>
+          <div class="admin-card">
+            <div class="admin-card-head">
+              <h2>Recent Orders</h2>
+              <a class="see-all" href="orders.html">View All &rarr;</a>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Order</th><th>Customer</th><th>Date</th><th class="num">Total</th><th>Status</th></tr></thead>
+                <tbody id="recent-orders-tbody"><tr><td colspan="5" style="color:var(--ink-3)">Loading&hellip;</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="admin-card">
+            <div class="admin-card-head"><h2>Top Products</h2></div>
+            <div id="top-products"><p style="font-size:0.82rem;color:var(--ink-3)">Loading&hellip;</p></div>
+          </div>
+          <div class="admin-card">
+            <div class="admin-card-head"><h2>Recent Activity</h2></div>
+            <div id="activity-feed"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div><!-- .admin-shell -->
+
+<script>
+function peso(n){ return '\u20B1' + Math.round(n).toLocaleString('en-PH'); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function cap(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : ''; }
+
+document.addEventListener('admin-ready', () => {
+  // Sidebar toggle
+  const toggle = document.getElementById('admin-sidebar-toggle');
+  const sidebar = document.getElementById('admin-sidebar');
+  if(toggle && sidebar){
+    toggle.addEventListener('click', ()=> sidebar.classList.toggle('open'));
+    document.addEventListener('click', e=>{
+      if(sidebar.classList.contains('open') && !sidebar.contains(e.target) && e.target!==toggle)
+        sidebar.classList.remove('open');
+    });
+  }
+
+  FB.apiAdminDashboard()
+    .then(d=>{
+      if(!d.ok) return;
+      document.getElementById('stat-revenue').textContent  = peso(d.revenue);
+      document.getElementById('stat-pending').textContent  = d.pending;
+      document.getElementById('stat-members').textContent  = d.active_members;
+      document.getElementById('stat-lowstock').textContent = d.low_stock;
+
+      // 7-day bar chart
+      const chart = document.getElementById('orders-bar-chart');
+      const entries = Object.entries(d.chart);
+      const maxC = Math.max(1, ...entries.map(e=>e[1]));
+      chart.innerHTML = entries.map(([day, cnt])=>{
+        const h = Math.max(6, Math.round((cnt/maxC)*110));
+        const lbl = new Date(day + 'T00:00').toLocaleDateString('en-PH',{weekday:'short'});
+        return `<div class="bar-col"><div class="bar" style="height:${h}px" title="${cnt} orders"></div><div class="bar-label">${lbl}</div></div>`;
+      }).join('');
+
+      // Recent orders
+      document.getElementById('recent-orders-tbody').innerHTML = d.recent_orders.length
+        ? d.recent_orders.map(o=>`<tr>
+            <td class="mono">${esc(o.id)}</td>
+            <td>${esc(o.customer_name)}</td>
+            <td>${esc(o.created_at?.slice(0,10))}</td>
+            <td class="num">${peso(o.total)}</td>
+            <td><span class="status-pill ${o.status}">${cap(o.status)}</span></td>
+          </tr>`).join('')
+        : '<tr><td colspan="5" style="color:var(--ink-3)">No orders yet.</td></tr>';
+
+      // Top products
+      document.getElementById('top-products').innerHTML = d.top_products.length
+        ? d.top_products.map(p=>{
+            const maxU = Math.max(1,...d.top_products.map(x=>x.units));
+            return `<div class="hbar-row"><div class="hbar-label">${esc(p.name)}</div>
+              <div class="hbar-track"><div class="hbar-fill" style="width:${Math.round(p.units/maxU*100)}%"></div></div>
+              <div class="hbar-val">${p.units} sold</div></div>`;
+          }).join('')
+        : '<p style="font-size:0.82rem;color:var(--ink-3)">No sales data yet.</p>';
+
+      // Activity feed
+      document.getElementById('activity-feed').innerHTML = d.activity.length
+        ? d.activity.map(a=>{
+            const icon  = a.type==='order' ? '🧾' : '💬';
+            const html  = a.type==='order'
+              ? `Order <strong>${esc(a.ref)}</strong> by ${esc(a.actor)} — <span class="status-pill ${a.status}" style="font-size:0.6rem;">${cap(a.status)}</span>`
+              : `<strong>${esc(a.actor)}</strong> sent a support message`;
+            return `<div class="activity-row"><div class="dot-ic">${icon}</div><div><div class="txt">${html}</div><div class="time">${esc(a.ts?.slice(0,16).replace('T',' '))}</div></div></div>`;
+          }).join('')
+        : '<p style="font-size:0.82rem;color:var(--ink-3)">No recent activity.</p>';
+    })
+    .catch(()=>{ document.getElementById('recent-orders-tbody').innerHTML='<tr><td colspan="5" style="color:var(--ink-3)">Could not load data.</td></tr>'; });
+});
+</script>
+<script type="module" src="js/admin-common.js"></script>
+</body>
+</html>

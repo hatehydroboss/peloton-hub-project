@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PelotonHub Admin — Orders</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%230b0b0a' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%230b0b0a'/%3E%3Cline x1='16' y1='16' x2='16' y2='3' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='26' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='6' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/styles.css" /><link rel="stylesheet" href="css/admin.css" />
+</head>
+<body class="admin-body">
+<button class="admin-sidebar-toggle" id="admin-sidebar-toggle" aria-label="Toggle menu">&#9776;</button>
+<div class="admin-shell">
+<aside class="admin-sidebar" id="admin-sidebar">
+  <div class="admin-sidebar-brand">
+    <span>Peloton<span class="dot">Hub</span></span><span class="tag-admin">Admin</span>
+  </div>
+  <ul class="admin-nav">
+    <li class="admin-nav-label">Overview</li>
+    <li><a href="index.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-sliders"/></svg></span> Dashboard</a></li>
+    <li class="admin-nav-label">Catalog</li>
+    <li><a href="products.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-bike"/></svg></span> Products</a></li>
+    <li><a href="stock.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-clipboard"/></svg></span> Stock Management</a></li>
+    <li><a href="orders.html" class="active"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-receipt"/></svg></span> Orders</a></li>
+    <li class="admin-nav-label">Community</li>
+    <li><a href="customers.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-user"/></svg></span> Customers</a></li>
+    <li><a href="events.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-calendar"/></svg></span> Events &amp; RSVPs</a></li>
+    <li><a href="membership.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-trophy"/></svg></span> Membership Tiers</a></li>
+    <li class="admin-nav-label">Support</li>
+    <li><a href="messages.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-bulb"/></svg></span> Messages</a></li>
+  </ul>
+  <div class="admin-sidebar-foot">
+    <div class="admin-avatar" id="admin-initials">SA</div>
+    <div class="who">
+      <div class="name" id="admin-name">Shop Admin</div>
+      <div class="role">Administrator</div>
+    </div>
+    <button class="admin-logout-btn" id="admin-logout-btn" type="button" aria-label="Log out" title="Log out">&#10148;</button>
+  </div>
+</aside>
+
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <div><h1>Orders</h1><p class="sub"><span id="order-count">0</span> reservations on file</p></div>
+      <div class="admin-topbar-right">
+        <a href="../home.html" class="btn-nav" style="background:var(--black);" target="_blank" rel="noopener">View Storefront</a>
+      </div>
+    </header>
+    <main class="admin-content">
+      <div class="admin-card">
+        <div class="data-toolbar">
+          <div class="admin-search"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-search"/></svg><input type="text" id="o-search" placeholder="Search order ID or customer&hellip;" /></div>
+          <select id="o-filter-status">
+            <option value="">All Statuses</option>
+            <option value="reserved">Reserved</option>
+            <option value="preparing">Preparing</option>
+            <option value="awaiting_pickup">Awaiting Pickup</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Order</th><th>Customer</th><th>Date</th><th>Pickup</th><th class="num">Total</th><th>Status</th></tr></thead>
+            <tbody id="orders-tbody"><tr><td colspan="6" style="color:var(--ink-3)">Loading&hellip;</td></tr></tbody>
+          </table>
+        </div>
+        <p class="pager" id="orders-pager"></p>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ORDER DETAIL MODAL -->
+<div class="modal-overlay" id="order-modal">
+  <div class="modal-box" style="max-width:600px;">
+    <button class="modal-close" id="order-modal-close" aria-label="Close">&times;</button>
+    <div class="admin-modal-body">
+      <h2 id="om-id" style="font-family:var(--font-mono);"></h2>
+      <p style="font-size:0.82rem;color:var(--ink-2);margin-bottom:1.2rem;"><span id="om-customer"></span> &middot; <span id="om-date"></span></p>
+      <div class="table-wrap" style="margin-bottom:1.2rem;">
+        <table><thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Price</th></tr></thead>
+        <tbody id="om-items"></tbody></table>
+      </div>
+      <p style="font-size:0.85rem;margin-bottom:0.3rem;">Pickup: <strong id="om-pickup"></strong></p>
+      <p style="font-size:0.85rem;margin-bottom:0.3rem;">Discount: <strong id="om-discount"></strong></p>
+      <p style="font-size:1rem;margin-bottom:1.4rem;">Total: <strong id="om-total" class="mono"></strong></p>
+      <div class="modal-actions">
+        <button class="btn-outline btn-sm" id="om-cancel-btn" type="button">Cancel Order</button>
+        <button class="btn-primary btn-sm" id="om-complete-btn" type="button">Mark Completed</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="ph-toast" aria-live="polite"></div>
+<script>
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function peso(n){return '\u20B1'+Math.round(n).toLocaleString('en-PH');}
+function cap(s){return s?s.split('_').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '):'';}
+function toast(m){const t=document.getElementById('ph-toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+function qs(s){return document.querySelector(s);}
+
+let ALL_ORDERS=[];
+const state={search:'',status:''};
+let activeOrderId=null;
+
+function render(){
+  let list=ALL_ORDERS.slice();
+  if(state.search){const q=state.search.toLowerCase();list=list.filter(o=>o.id.toLowerCase().includes(q)||(o.customer_name||'').toLowerCase().includes(q));}
+  if(state.status) list=list.filter(o=>o.status===state.status);
+  qs('#order-count').textContent=ALL_ORDERS.length;
+  qs('#orders-pager').textContent='Showing '+list.length+' of '+ALL_ORDERS.length+' orders';
+  qs('#orders-tbody').innerHTML=list.map(o=>`
+    <tr class="tr-clickable" onclick="openOrder('${esc(o.id)}')">
+      <td class="mono">${esc(o.id)}</td>
+      <td>${esc(o.customer_name||'')} ${o.tier?`<span class="tier-pill ${esc(o.tier)}" style="margin-left:4px;">${esc(o.tier)}</span>`:''}</td>
+      <td>${esc((o.created_at||'').slice(0,10))}</td>
+      <td>${esc(o.pickup_date||'')} ${o.pickup_time?'&middot; '+esc(o.pickup_time):''}</td>
+      <td class="num">${peso(o.total)}</td>
+      <td><span class="status-pill ${o.status}">${cap(o.status)}</span></td>
+    </tr>`).join('')||(ALL_ORDERS.length===0?'<tr><td colspan="6" style="color:var(--ink-3)">No orders yet.</td></tr>':'<tr><td colspan="6">No orders match your filters.</td></tr>');
+}
+
+function loadOrders(){
+  const params=new URLSearchParams();
+  if(state.search) params.set('q',state.search);
+  if(state.status) params.set('status',state.status);
+  FB.apiAdminOrdersGet(Object.fromEntries(params)).then(d=>{if(d.ok){ALL_ORDERS=d.orders;render();}});
+}
+
+qs('#o-search').addEventListener('input',e=>{state.search=e.target.value;render();});
+qs('#o-filter-status').addEventListener('change',e=>{state.status=e.target.value;render();});
+
+const modal=qs('#order-modal');
+window.openOrder=function(id){
+  FB.apiAdminOrdersGet({id}).then(d=>{
+    if(!d.ok)return;
+    const o=d.order;activeOrderId=o.id;
+    qs('#om-id').textContent=o.id;
+    qs('#om-customer').textContent=(o.customer_name||o.customer_email||'Guest');
+    qs('#om-date').textContent='Placed '+o.created_at?.slice(0,10);
+    qs('#om-items').innerHTML=(o.items||[]).map(it=>`<tr><td>${esc(it.name)}</td><td class="num">${it.qty}</td><td class="num">${peso(it.price*it.qty)}</td></tr>`).join('');
+    qs('#om-pickup').textContent=(o.pickup_date||'—')+' at '+(o.pickup_time||'—');
+    qs('#om-discount').textContent=o.discount_pct?o.discount_pct+'%':'None';
+    qs('#om-total').textContent=peso(o.total);
+    const canAct=o.status==='reserved';
+    qs('#om-cancel-btn').disabled=!canAct;qs('#om-complete-btn').disabled=!canAct;
+    qs('#om-cancel-btn').style.opacity=canAct?1:0.4;qs('#om-complete-btn').style.opacity=canAct?1:0.4;
+    modal.classList.add('open');
+  });
+};
+
+qs('#order-modal-close').addEventListener('click',()=>modal.classList.remove('open'));
+modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('open');});
+
+function setStatus(status){
+  if(!activeOrderId)return;
+  FB.apiAdminOrderStatus({id:activeOrderId,status})
+    .then(d=>{if(d.ok){toast('Order updated');modal.classList.remove('open');loadOrders();}else alert(d.error);});
+}
+qs('#om-cancel-btn').addEventListener('click',()=>{if(confirm('Cancel this order?'))setStatus('cancelled');});
+qs('#om-complete-btn').addEventListener('click',()=>setStatus('completed'));
+
+document.addEventListener('admin-ready',()=>{
+  const toggle=document.getElementById('admin-sidebar-toggle');
+  const sidebar=document.getElementById('admin-sidebar');
+  if(toggle&&sidebar) toggle.addEventListener('click',()=>sidebar.classList.toggle('open'));
+  loadOrders();
+});
+</script>
+<script type="module" src="js/admin-common.js"></script>
+</body>
+</html>

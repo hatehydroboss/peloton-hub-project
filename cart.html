@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>PelotonHub — Cart</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%230b0b0a' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%230b0b0a'/%3E%3Cline x1='16' y1='16' x2='16' y2='3' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='26' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='6' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/shop.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#ff4d23" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="apple-touch-icon" href="img/icons/icon-192.png" />
+</head>
+<body class="cart-page">
+<a href="#main" class="skip-link">Skip to content</a>
+<nav class="navbar">
+  <a href="home.html" class="logo"><span>Peloton<span class="dot">Hub</span></span></a>
+  <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+  <ul class="nav-links" id="nav-links">
+    <li><a href="home.html">Home</a></li>
+    <li><a href="catalog.html">Catalog</a></li>
+    <li><a href="membership.html">Membership</a></li>
+    <li><a href="events.html">Events</a></li>
+    <li><a href="support.html">Support</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="cart.html" class="icon-btn" aria-label="View cart">
+      <svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-cart"/></svg>
+      <span class="badge" hidden>0</span>
+    </a>
+    <a href="auth.html" class="btn-nav" id="nav-auth-btn">Sign In</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <p class="eyebrow">Reserve &amp; Pick Up</p>
+  <h1>Your Cart</h1>
+</div>
+
+<main id="main" class="section">
+  <div class="steps">
+    <div class="step active" id="step-1">1 &mdash; <span class="step-long">Review </span>Cart</div>
+    <div class="step" id="step-2">2 &mdash; Pickup<span class="step-long"> Details</span></div>
+    <div class="step" id="step-3">3 &mdash; Confirm<span class="step-long">ation</span></div>
+  </div>
+
+  <div class="empty-state" id="guest-view" hidden style="text-align:center;padding:3rem;">
+    <div class="er-ico lock-ico"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-lock"/></svg></div>
+    <h3>Sign in to use your cart</h3>
+    <p style="color:var(--ink-2);margin-bottom:1.5rem;">Your cart is saved to your account. Sign in or create a free Spoke account to continue.</p>
+    <a href="auth.html"><button class="btn-primary" type="button">Sign In / Register</button></a>
+    <p style="margin-top:1rem;"><a href="home.html?guest=1" style="font-size:0.82rem;color:var(--ink-3);">Continue browsing as guest</a></p>
+  </div>
+  <div class="cart-layout" id="member-view" hidden>
+    <div>
+      <!-- STEP 1: Cart items -->
+      <div id="panel-1">
+        <div id="cart-items"></div>
+      </div>
+
+      <!-- STEP 2: Pickup details -->
+      <div id="panel-2" class="checkout-panel panel" style="margin-top:2rem;" hidden>
+        <p class="panel-head" style="border:none;margin-bottom:1.5rem;"><span>In-Store Pickup Details</span></p>
+        <p style="color:var(--ink-2);font-size:0.85rem;margin-bottom:1.5rem;line-height:1.7;">All reservations are fulfilled in-store. Payment is processed at the branch upon pickup. Items are held for 48 hours.</p>
+        <div class="form-row">
+          <div class="form-group"><label for="pickup-date">Preferred Pickup Date</label><input id="pickup-date" type="date" /></div>
+          <div class="form-group">
+            <label for="pickup-time">Preferred Pickup Time</label>
+            <select id="pickup-time">
+              <option>Morning (9AM &ndash; 12PM)</option>
+              <option>Afternoon (1PM &ndash; 5PM)</option>
+              <option>Evening (5PM &ndash; 7PM)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group"><label for="pickup-notes">Special Instructions (optional)</label><textarea id="pickup-notes" rows="3" placeholder="e.g., Please install the tires before pickup&hellip;"></textarea></div>
+        <button class="btn-primary" id="confirm-btn" type="button" style="padding:0.8rem 2rem;">Confirm Reservation <svg class="picon arrow" aria-hidden="true"><use href="img/icons.svg#i-arrow-right"/></svg></button>
+        <button class="pickup-back" id="pickup-back-btn" type="button"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-arrow-left"/></svg> Back to cart</button>
+      </div>
+
+      <!-- STEP 3: Confirmation -->
+      <div id="panel-3" class="checkout-panel panel" style="margin-top:2rem;text-align:center;padding:3rem 2rem;" hidden>
+        <div class="ph-success-ico" aria-hidden="true">&#10003;</div>
+        <h3 style="font-size:1.3rem;margin-bottom:0.5rem;">Reservation Confirmed</h3>
+        <p style="color:var(--ink-2);font-size:0.88rem;margin-bottom:1.8rem;line-height:1.7;">Show this Reservation ID at the shop counter to pay and pick up. We&rsquo;ll hold your items for 48 hours.</p>
+        <div style="border:1px solid var(--line);padding:1rem;margin:0 auto 1.8rem;display:inline-block;">
+          <div style="font-size:0.68rem;color:var(--ink-3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.3rem;">Reservation ID</div>
+          <div class="num" style="font-size:1.1rem;font-weight:700;letter-spacing:0.06em;" id="reservation-id">&mdash;</div>
+        </div><br>
+        <a href="orders.html"><button class="btn-primary" type="button">View My Orders</button></a>
+      </div>
+    </div>
+
+    <!-- ORDER SUMMARY -->
+    <div class="cart-sidebar" id="cart-sidebar">
+      <div class="order-summary" id="cart-summary">
+        <h3>Order Summary</h3>
+        <div id="summary-rows"></div>
+        <p id="cart-upsell-note" style="display:none;font-size:0.78rem;color:var(--ink-2);margin-top:0.8rem;"></p>
+        <div id="proceed-wrap">
+        <button class="btn-primary" id="proceed-btn" type="button" style="width:100%;margin-top:1.2rem;padding:1rem;">Proceed to Reservation <svg class="picon arrow" aria-hidden="true"><use href="img/icons.svg#i-arrow-right"/></svg></button>
+        <p style="text-align:center;margin-top:0.8rem;font-size:0.72rem;color:var(--ink-3);letter-spacing:0.04em;">Payment processed in-store at pickup</p>
+        </div>
+      </div>
+      <div class="promo-box">
+        <p class="label">Promo Code</p>
+        <div class="promo-row">
+          <label for="promo-input" class="sr-only">Promo code</label>
+          <input id="promo-input" type="text" placeholder="Enter code&hellip;" />
+          <button id="promo-apply-btn" type="button">Apply</button>
+        </div>
+        <p class="form-msg" id="promo-msg" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-grid">
+    <div class="footer-col">
+      <h4>PelotonHub</h4>
+      <p>A web-based platform for the local cycling community &mdash; combining retail, membership, and social impact into one digital ecosystem.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Shop</h4>
+      <ul>
+        <li><a href="catalog.html?cat=Built+Bikes">Built Bikes</a></li>
+        <li><a href="catalog.html?cat=Bike+Parts+%26+Accessories">Parts &amp; Accessories</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Community</h4>
+      <ul>
+        <li><a href="events.html">Group Rides</a></li>
+        <li><a href="events.html">Charity Events</a></li>
+        <li><a href="membership.html">Membership Tiers</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Account</h4>
+      <ul>
+        <li><a href="auth.html">Sign In / Register</a></li>
+        <li><a href="profile.html">My Profile</a></li>
+        <li><a href="orders.html">Order History</a></li>
+        <li><a href="support.html">Support</a></li>
+        <li><a href="terms.html">Terms &amp; Privacy</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">&copy; 2026 PelotonHub. All rights reserved.</div>
+</footer>
+
+<script type="module">
+import { esc, peso, getUser, refreshCartBadge, confetti, icon } from './js/main.js';
+import { apiCartGet, apiCartUpdate, apiCartRemove, apiOrderPlace, apiPromo, apiSettingsGet } from './js/firebase.js';
+
+const user = await getUser();
+document.getElementById(user?'member-view':'guest-view').hidden=false;
+
+function showMsg(el,type,text){if(!el)return;el.textContent=text;el.className='form-msg show '+type;clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),5000);}
+
+let CART=[], PROMO_DISC=0, PROMO_CODE='';
+const TIER_DISC = {'Spoke':5,'Chain':10,'Peloton':20};
+const USER_TIER = user ? user.tier : '';
+// Live tier discount from Admin → Membership Tiers (same value checkout charges)
+const { settings } = await apiSettingsGet();
+const memberDisc = settings['tier_discount_' + USER_TIER] ?? TIER_DISC[USER_TIER] ?? 0;
+
+function effectiveDisc(){ return Math.max(memberDisc, PROMO_DISC); }
+
+function renderCart(){
+  const items = document.getElementById('cart-items');
+  if(!CART.length){
+    items.innerHTML='<div class="empty-state" style="text-align:center;padding:2rem;"><p style="color:var(--ink-2);">Your cart is empty.</p><a href="catalog.html"><button class="btn-outline" type="button" style="margin-top:1rem;">Browse Catalog</button></a></div>';
+    document.getElementById('cart-summary').style.display='none';
+    return;
+  }
+  document.getElementById('cart-summary').style.display='';
+  items.innerHTML = CART.map(l=>`
+    <div class="cart-item" style="display:flex;gap:1rem;align-items:flex-start;padding:1rem 0;border-bottom:1px solid var(--line);">
+      <div style="flex-shrink:0;width:64px;height:64px;background:var(--surface);border-radius:var(--radius);overflow:hidden;display:flex;align-items:center;justify-content:center;">
+        ${l.image?`<img src="${esc(l.image)}" style="width:100%;height:100%;object-fit:contain;background:#fff;" alt="${esc(l.name)}" />`:icon('bike')}
+      </div>
+      <div style="flex:1;">
+        <p style="font-weight:600;font-size:0.9rem;">${esc(l.name)}</p>
+        ${l.size?`<p style="font-size:0.75rem;color:var(--ink-3);">Size: ${esc(l.size)}</p>`:''}
+        <p style="font-size:0.82rem;color:var(--ink-2);">${peso(l.price)} each</p>
+      </div>
+      <div class="qty-control" style="display:flex;align-items:center;gap:0.3rem;">
+        <button class="qty-btn" onclick="updateQty('${esc(l.product_id)}','${l.size||''}',${l.qty-1})" aria-label="Decrease">&#8722;</button>
+        <span style="min-width:1.5rem;text-align:center;">${l.qty}</span>
+        <button class="qty-btn" onclick="updateQty('${esc(l.product_id)}','${l.size||''}',${l.qty+1})" aria-label="Increase">&#43;</button>
+      </div>
+      <button class="btn-ghost" onclick="removeItem('${esc(l.product_id)}','${l.size||''}')" aria-label="Remove"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-trash"/></svg></button>
+    </div>`).join('');
+
+  const subtotal = CART.reduce((s,l)=>s+l.price*l.qty, 0);
+  const disc     = effectiveDisc();
+  const discAmt  = Math.round(subtotal * disc / 100);
+  const total    = subtotal - discAmt;
+
+  const rows = document.getElementById('summary-rows');
+  rows.innerHTML=`
+    <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:0.3rem;"><span>Subtotal</span><span>${peso(subtotal)}</span></div>
+    ${disc?`<div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:0.3rem;color:var(--success,green);"><span>Discount (${disc}%)</span><span>-${peso(discAmt)}</span></div>`:''}
+    <div style="display:flex;justify-content:space-between;font-weight:700;font-size:1rem;padding-top:0.5rem;border-top:1px solid var(--line);margin-top:0.5rem;"><span>Total</span><span>${peso(total)}</span></div>`;
+}
+
+function loadCart(){
+  apiCartGet().then(d=>{
+    if(d.ok){CART=d.cart;renderCart();}
+  });
+}
+
+function updateQty(pid, size, qty){
+  apiCartUpdate({product_id:pid,size:size||null,qty})
+    .then(d=>{if(d.ok){CART=d.cart;renderCart();refreshCartBadge();}});
+}
+function removeItem(pid,size){
+  apiCartRemove({product_id:pid,size:size||null})
+    .then(d=>{if(d.ok){CART=d.cart;renderCart();refreshCartBadge();}});
+}
+
+// Steps — step 2 gets its own history entry, so the top-left back button
+// and the Android back button return to the cart instead of leaving the page.
+let currentStep=1;
+function goStep(n){
+  [1,2,3].forEach(i=>{
+    document.getElementById('panel-'+i).hidden=(i!==n);
+    const s=document.getElementById('step-'+i);
+    s.classList.toggle('active',i===n);
+    s.classList.toggle('done',i<n);
+  });
+  // "Proceed" only belongs to step 1; after confirming, totals/promo are done too
+  document.getElementById('proceed-wrap').hidden=(n!==1);
+  document.getElementById('cart-sidebar').hidden=(n===3);
+  document.getElementById('member-view').classList.toggle('on-pickup',n===2);
+  currentStep=n;
+  window.scrollTo(0,0);
+}
+
+document.getElementById('proceed-btn').addEventListener('click',()=>{
+  if(!CART.length) return;
+  history.pushState({step:2},'');
+  goStep(2);
+});
+document.getElementById('pickup-back-btn').addEventListener('click',()=>history.back());
+window.addEventListener('popstate',()=>{
+  if(currentStep===2) goStep(1);
+  else if(currentStep===3) history.back();   // reservation placed: Back leaves the cart
+});
+if(history.state?.step) history.replaceState(null,'');   // reloaded mid-checkout: start at step 1
+
+document.getElementById('confirm-btn').addEventListener('click', async ()=>{
+  const date  = document.getElementById('pickup-date').value;
+  const time  = document.getElementById('pickup-time').value;
+  const notes = document.getElementById('pickup-notes').value;
+  if(!date){ alert('Please select a pickup date.'); return; }
+  const data=await apiOrderPlace({pickup_date:date,pickup_time:time,pickup_notes:notes,promo_code:PROMO_CODE});
+  if(data.ok){
+    document.getElementById('reservation-id').textContent='#'+data.order_id;
+    CART=[];
+    refreshCartBadge();
+    history.replaceState({step:3},'');
+    goStep(3);
+    confetti();
+  } else { alert(data.error||'Could not place reservation.'); }
+});
+
+// Promo
+document.getElementById('promo-apply-btn').addEventListener('click', async ()=>{
+  const code=document.getElementById('promo-input').value.trim().toUpperCase();
+  const msg=document.getElementById('promo-msg');
+  if(!code) return showMsg(msg,'error','Enter a promo code.');
+  const data=await apiPromo({code});
+  if(data.ok){
+    PROMO_CODE=code; PROMO_DISC=data.discount;
+    showMsg(msg,'success',data.discount+'% off applied!');
+    renderCart();
+  } else showMsg(msg,'error',data.error);
+});
+
+// Inline onclick handlers need global access from a module
+window.updateQty=updateQty;
+window.removeItem=removeItem;
+
+if(user) loadCart();
+</script>
+</body>
+</html>
