@@ -91,13 +91,22 @@ document.getElementById('reg-submit').addEventListener('click', async ()=>{
   const terms=document.getElementById('reg-terms').checked;
   const msg  =document.getElementById('reg-msg');
   if(!first||!last)return showMsg(msg,'error','First and last name are required.');
-  if(!email)return showMsg(msg,'error','Email is required.');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return showMsg(msg,'error','Enter a valid email address.');
   if(pass.length<8)return showMsg(msg,'error','Password must be at least 8 characters.');
   if(pass!==conf)return showMsg(msg,'error','Passwords do not match.');
   if(!terms)return showMsg(msg,'error','Please accept the terms to continue.');
+  const btn=document.getElementById('reg-submit');
+  if(btn.disabled)return;                      // a double-tap would try to create the account twice
+  btn.disabled=true; btn.textContent='Creating account…';
   const data=await apiRegister({first_name:first,last_name:last,email,mobile,password:pass,tier});
-  if(data.ok){location.href='home.html';}else showMsg(msg,'error',data.error);
+  if(data.ok){location.href='home.html';}
+  else { btn.disabled=false; btn.textContent='Create an Account'; showMsg(msg,'error',data.error); }
 });
+
+// Phone keyboards: "Go"/Enter on any field submits the form
+document.querySelectorAll('#register-panel input:not([type=checkbox])').forEach(inp=>inp.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ e.preventDefault(); inp.blur(); document.getElementById('reg-submit').click(); }
+}));
 
 </script>
 </body>

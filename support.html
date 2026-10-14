@@ -152,7 +152,12 @@ document.getElementById('s-submit').addEventListener('click', async ()=>{
   const message = document.getElementById('s-message').value.trim();
   const msg     = document.getElementById('s-msg');
   if(!name||!email||!message) return showMsg(msg,'error','Name, email and message are required.');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showMsg(msg,'error','Enter a valid email address so we can reply.');
+  const btn = document.getElementById('s-submit');
+  if(btn.disabled) return;                     // a double-tap would send the message twice
+  btn.disabled = true; btn.textContent = 'Sending…';
   const data = await apiSupportSubmit({name,email,topic,order_ref:orderRef,message});
+  btn.disabled = false; btn.textContent = 'Send Message';
   if(data.ok){
     showMsg(msg,'success',data.message);
     document.getElementById('s-message').value='';

@@ -84,6 +84,7 @@
     <div class="od-totals" style="text-align:right;font-size:0.88rem;line-height:2;" id="od-totals"></div>
     <p style="font-size:0.85rem;margin-top:1rem;">Pickup: <strong id="od-pickup"></strong></p>
     <div style="margin-top:1rem;" id="od-actions"></div>
+    <p class="form-msg" id="od-msg" aria-live="polite"></p>
   </div>
   </div>
 </main>
@@ -124,7 +125,7 @@
 </footer>
 
 <script type="module">
-import { esc, peso, getUser } from './js/main.js';
+import { esc, peso, getUser, showMsg, Toast } from './js/main.js';
 import { apiOrdersGet, apiOrderCancel } from './js/firebase.js';
 
 function cap(s){return s?s.split('_').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '):'';}
@@ -148,6 +149,7 @@ function render(){
 function loadOrders(){
   apiOrdersGet().then(d=>{
     if(d.ok){ALL_ORDERS=d.orders;render();}
+    else document.getElementById('orders-tbody').innerHTML='<tr><td colspan="7" style="color:var(--ink-3)">Couldn’t load your orders. <a href="#" onclick="location.reload();return false;" style="color:var(--accent);font-weight:700;">Try again</a></td></tr>';
   });
 }
 
@@ -162,31 +164,43 @@ document.querySelectorAll('#order-filters button').forEach(btn=>{
 
 function showDetail(id){
   apiOrdersGet({id}).then(d=>{
-    if(!d.ok)return;
+    if(!d.ok){ Toast.show(d.error||'Couldn’t open that order'); return; }
     const o=d.order;
     document.getElementById('order-detail').style.display='block';
     document.getElementById('od-id').textContent=o.id;
-    document.getElementById('od-date').textContent='Placed '+o.created_at?.slice(0,10);
+    document.getElementById('od-date').textContent=o.created_at?'Placed '+o.created_at.slice(0,10):'';
+    document.getElementById('od-msg').className='form-msg';
     document.getElementById('od-status').textContent=cap(o.status);
     document.getElementById('od-status').className='status-pill '+o.status;
     document.getElementById('od-pickup').textContent=(o.pickup_date||'—')+' at '+(o.pickup_time||'—');
     document.getElementById('od-items').innerHTML=(o.items||[]).map(it=>`
       <tr><td class="i-name">${esc(it.name)}</td><td class="i-qty" data-label="Qty">${it.qty}</td><td class="i-price" data-label="Unit">${peso(it.price)}</td><td class="i-sub">${peso(it.price*it.qty)}</td></tr>`).join('');
-    const sub=o.items.reduce((s,i)=>s+i.price*i.qty,0);
-    const discAmt=Math.round(sub*o.discount_pct/100);
+    const sub=(o.items||[]).reduce((s,i)=>s+i.price*i.qty,0);
+    const discAmt=Math.round(sub*(o.discount_pct||0)/100);
     document.getElementById('od-totals').innerHTML=`
       <div>Subtotal: ${peso(sub)}</div>
       ${o.discount_pct?`<div>Discount (${o.discount_pct}%): -${peso(discAmt)}</div>`:''}
       <div style="font-weight:700;font-size:1rem;">Total: ${peso(o.total)}</div>`;
     const acts=document.getElementById('od-actions');
-    acts.innerHTML=o.status==='reserved'?`<button class="btn-outline btn-sm" onclick="cancelOrder('${esc(o.id)}')">Cancel Reservation</button>`:'';
+    acts.innerHTML=o.status==='reserved'?`<button class="btn-outline btn-sm" id="od-cancel" onclick="cancelOrder('${esc(o.id)}')">Cancel Reservation</button>`:'';
     document.getElementById('order-detail').scrollIntoView({behavior:'smooth',block:'start'});
   });
 }
 
+// Tap once to arm, tap again within 4 s to cancel (no browser pop-up, which looks out of place in the app)
 function cancelOrder(id){
-  if(!confirm('Cancel this reservation?'))return;
-  apiOrderCancel({order_id:id}).then(d=>{if(d.ok){loadOrders();document.getElementById('order-detail').style.display='none';}else alert(d.error);});
+  const btn=document.getElementById('od-cancel');
+  if(!btn || btn.disabled) return;
+  if(!btn.dataset.armed){
+    btn.dataset.armed='1'; btn.textContent='Tap again to cancel';
+    btn._t=setTimeout(()=>{ delete btn.dataset.armed; btn.textContent='Cancel Reservation'; },4000);
+    return;
+  }
+  clearTimeout(btn._t); btn.disabled=true; btn.textContent='Cancelling…';
+  apiOrderCancel({order_id:id}).then(d=>{
+    if(d.ok){ loadOrders(); document.getElementById('order-detail').style.display='none'; Toast.show('Reservation cancelled'); }
+    else { btn.disabled=false; delete btn.dataset.armed; btn.textContent='Cancel Reservation'; showMsg(document.getElementById('od-msg'),'error',d.error||'Could not cancel'); }
+  });
 }
 
 // Inline onclick handlers need global access from a module

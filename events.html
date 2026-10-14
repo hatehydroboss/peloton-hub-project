@@ -45,13 +45,18 @@
 
 <main id="main" class="section">
   <p class="section-title">Upcoming Events</p>
-  <div id="event-list" style="border:1px solid var(--line);margin-bottom:3rem;">
+  <div id="event-list" class="ev-list" style="margin-bottom:3rem;">
     <p style="padding:2rem;color:var(--ink-3);">Loading events&hellip;</p>
   </div>
 
   <div id="my-registrations" hidden>
   <p class="section-title">My Registrations</p>
-  <div id="my-rsvp-list" style="border:1px solid var(--line);border-radius:var(--radius);"></div>
+  <div id="my-rsvp-list" style="border:1px solid var(--line);border-radius:var(--radius);margin-bottom:3rem;"></div>
+  </div>
+
+  <div id="past-events" hidden>
+  <p class="section-title">Past Events</p>
+  <div id="past-list" class="ev-list"></div>
   </div>
 </main>
 
@@ -100,29 +105,37 @@ function dd(d){ return String(d.getDate()).padStart(2,'0'); }
 
 let user = null;
 
-function eventRow(ev){
+// Events dated before today are over: listed under "Past Events" without an RSVP button
+function isPast(ev){
+  const d=parseDate(ev.event_date); d.setHours(23,59,59,999);
+  return d < new Date();
+}
+
+function eventRow(ev, past=false){
   const filled   = ev.filled|0, capacity = ev.capacity|0;
   const pct      = capacity>0 ? Math.min(100, Math.round(filled/capacity*100)) : 0;
   const full     = ev.spots_left===0 && !ev.rsvpd;
   const d        = parseDate(ev.event_date);
-  const action   = user
-    ? `<button class="btn-outline btn-sm rsvp-btn" data-event-id="${esc(ev.id)}" data-rsvpd="${ev.rsvpd?'1':'0'}" ${full?'disabled':''}>${ev.rsvpd?'Cancel RSVP':(full?'Full':'RSVP Now')}</button>`
-    : `<a href="auth.html"><button class="btn-outline btn-sm">Sign in to RSVP</button></a>`;
+  const action   = past
+    ? `<span class="status-pill cancelled" style="text-decoration:none;">Ended</span>`
+    : user
+      ? `<button class="btn-outline btn-sm rsvp-btn" type="button" data-event-id="${esc(ev.id)}" ${full?'disabled':''}>${ev.rsvpd?'Cancel RSVP':(full?'Full':'RSVP Now')}</button>`
+      : `<button class="btn-outline btn-sm" type="button" data-signin>Sign in to RSVP</button>`;
   return `
-    <div class="event-row" style="display:flex;gap:1.5rem;padding:1.5rem;border-bottom:1px solid var(--line);align-items:flex-start;">
-      <div class="date-badge" style="flex-shrink:0;text-align:center;min-width:52px;">
-        <div style="font-size:1.4rem;font-weight:700;font-family:var(--font-mono);">${dd(d)}</div>
-        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-3);">${MONTHS[d.getMonth()]}</div>
+    <div class="event-row ev${past?' is-past':''}">
+      <div class="date-badge">
+        <div class="ev-dd">${dd(d)}</div>
+        <div class="ev-mo">${MONTHS[d.getMonth()]}</div>
       </div>
-      <div style="flex:1;">
-        <p style="font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:0.2rem;">${esc(ev.kicker)}</p>
-        <h3 style="font-size:1rem;margin-bottom:0.3rem;">${esc(ev.title)}</h3>
-        ${ev.dist?`<p style="font-size:0.78rem;color:var(--ink-3);margin-bottom:0.5rem;">${esc(ev.dist)}</p>`:''}
-        <p style="font-size:0.82rem;color:var(--ink-2);line-height:1.6;margin-bottom:0.8rem;">${esc(ev.description)}</p>
-        <div style="display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap;">
-          <div style="flex:1;min-width:120px;">
-            <div style="height:4px;background:var(--line);border-radius:2px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:var(--accent);border-radius:2px;"></div></div>
-            <p style="font-size:0.7rem;color:var(--ink-3);margin-top:0.2rem;">${filled}/${capacity} registered</p>
+      <div class="ev-body">
+        <p class="ev-kicker">${esc(ev.kicker)}${ev.is_vip?' <span class="ev-vip">Members</span>':''}</p>
+        <h3>${esc(ev.title)}</h3>
+        <p class="ev-dist">${[ev.dist, d.toLocaleDateString('en-US',{weekday:'long'})].filter(Boolean).map(esc).join(' &middot; ')}</p>
+        <p class="ev-desc">${esc(ev.description)}</p>
+        <div class="ev-foot">
+          <div class="ev-cap">
+            <div class="ev-bar"><div style="width:${pct}%;"></div></div>
+            <p>${filled}/${capacity} registered${!past&&ev.rsvpd?' &middot; <strong style="color:var(--success);">You’re in</strong>':''}</p>
           </div>
           ${action}
         </div>
@@ -133,11 +146,11 @@ function eventRow(ev){
 function myRow(ev){
   const d = parseDate(ev.event_date);
   return `
-    <div style="display:flex;gap:1rem;padding:1rem 1.5rem;border-bottom:1px solid var(--line);align-items:center;">
-      <div style="font-weight:700;font-family:var(--font-mono);min-width:40px;text-align:center;">${dd(d)} ${MONTHS[d.getMonth()]}</div>
-      <div style="flex:1;">
+    <div class="ev-mine">
+      <div class="ev-mine-date">${dd(d)} ${MONTHS[d.getMonth()]}</div>
+      <div style="flex:1;min-width:0;">
         <p style="font-weight:600;font-size:0.88rem;">${esc(ev.title)}</p>
-        <p style="font-size:0.75rem;color:var(--ink-3);">${esc(ev.kicker)} &middot; ${esc(ev.dist)}</p>
+        <p style="font-size:0.75rem;color:var(--ink-3);">${[ev.kicker,ev.dist].filter(Boolean).map(esc).join(' &middot; ')}</p>
       </div>
       <span class="status-pill completed" style="font-size:0.62rem;">Registered</span>
     </div>`;
@@ -146,20 +159,26 @@ function myRow(ev){
 async function load(){
   const list = document.getElementById('event-list');
   const data = await apiEventsGet();
-  if(!data.ok){ list.innerHTML='<p style="padding:2rem;color:var(--ink-3);">Could not load events.</p>'; return; }
-  list.innerHTML = data.events.map(eventRow).join('')
-    || '<p style="padding:2rem;color:var(--ink-3);">No upcoming events. Check back soon.</p>';
+  if(!data.ok){ list.innerHTML='<p style="padding:2rem;color:var(--ink-3);">Could not load events. Pull down to refresh.</p>'; return; }
+  const upcoming = data.events.filter(ev=>!isPast(ev));
+  const past     = data.events.filter(isPast).reverse().slice(0,6);   // most recent first
+  list.innerHTML = upcoming.map(ev=>eventRow(ev)).join('')
+    || '<p class="ev-empty">No upcoming events right now. Check back soon!</p>';
 
-  const mine = data.events.filter(ev=>ev.rsvpd);
+  const mine = upcoming.filter(ev=>ev.rsvpd);
   document.getElementById('my-registrations').hidden = !(user && mine.length);
   document.getElementById('my-rsvp-list').innerHTML = mine.map(myRow).join('');
 
+  document.getElementById('past-events').hidden = !past.length;
+  document.getElementById('past-list').innerHTML = past.map(ev=>eventRow(ev,true)).join('');
+
   list.querySelectorAll('.rsvp-btn').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
-      btn.disabled=true;
+      if(btn.disabled) return;
+      btn.disabled=true; btn.textContent='Saving…';
       const res = await apiEventRsvp({event_id:btn.dataset.eventId});
-      if(res.ok){ load(); }
-      else { Toast.show(res.error); btn.disabled=false; }
+      if(res.ok){ Toast.show(res.rsvpd?'You’re registered!':'RSVP cancelled'); load(); }
+      else { Toast.show(res.error); load(); }
     });
   });
 }

@@ -768,22 +768,25 @@ export async function apiEventRsvp({ event_id }) {
     const rsvpRef = doc(db, 'rsvps', rsvpId);
     const rsvpSnap = await getDoc(rsvpRef);
 
+    // The count is read inside the transaction, so two people tapping at once can't overfill it
     if (rsvpSnap.exists()) {
       // Remove RSVP
       await runTransaction(db, async (tx) => {
+        const ev = (await tx.get(eventRef)).data();
         tx.delete(rsvpRef);
-        tx.update(eventRef, { filled: Math.max(0, (eventSnap.data().filled || 0) - 1) });
+        tx.update(eventRef, { filled: Math.max(0, (ev.filled || 0) - 1) });
       });
       return { ok: true, rsvpd: false };
     } else {
       // Add RSVP — check capacity
-      const ev = eventSnap.data();
-      if ((ev.filled || 0) >= ev.capacity)
-        return { ok: false, error: 'This event is full' };
-      await runTransaction(db, async (tx) => {
+      const full = await runTransaction(db, async (tx) => {
+        const ev = (await tx.get(eventRef)).data();
+        if ((ev.filled || 0) >= ev.capacity) return true;
         tx.set(rsvpRef, { user_id: u.uid, event_id, created_at: serverTimestamp() });
         tx.update(eventRef, { filled: (ev.filled || 0) + 1 });
+        return false;
       });
+      if (full) return { ok: false, error: 'This event is full' };
       return { ok: true, rsvpd: true };
     }
   } catch (e) {

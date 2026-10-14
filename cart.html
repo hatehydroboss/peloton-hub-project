@@ -60,7 +60,7 @@
     <div>
       <!-- STEP 1: Cart items -->
       <div id="panel-1">
-        <div id="cart-items"></div>
+        <div id="cart-items"><p style="color:var(--ink-3);padding:1.5rem 0;">Loading your cart&hellip;</p></div>
       </div>
 
       <!-- STEP 2: Pickup details -->
@@ -79,7 +79,8 @@
           </div>
         </div>
         <div class="form-group"><label for="pickup-notes">Special Instructions (optional)</label><textarea id="pickup-notes" rows="3" placeholder="e.g., Please install the tires before pickup&hellip;"></textarea></div>
-        <button class="btn-primary" id="confirm-btn" type="button" style="padding:0.8rem 2rem;">Confirm Reservation <svg class="picon arrow" aria-hidden="true"><use href="img/icons.svg#i-arrow-right"/></svg></button>
+        <p class="form-msg" id="pickup-msg" aria-live="polite"></p>
+        <button class="btn-primary" id="confirm-btn" type="button" style="padding:0.8rem 2rem;margin-top:.6rem;">Confirm Reservation <svg class="picon arrow" aria-hidden="true"><use href="img/icons.svg#i-arrow-right"/></svg></button>
         <button class="pickup-back" id="pickup-back-btn" type="button"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-arrow-left"/></svg> Back to cart</button>
       </div>
 
@@ -177,10 +178,10 @@ function renderCart(){
   const items = document.getElementById('cart-items');
   if(!CART.length){
     items.innerHTML='<div class="empty-state" style="text-align:center;padding:2rem;"><p style="color:var(--ink-2);">Your cart is empty.</p><a href="catalog.html"><button class="btn-outline" type="button" style="margin-top:1rem;">Browse Catalog</button></a></div>';
-    document.getElementById('cart-summary').style.display='none';
+    if(currentStep===1) document.getElementById('cart-sidebar').hidden=true;   // no totals or promo box for an empty cart
     return;
   }
-  document.getElementById('cart-summary').style.display='';
+  if(currentStep===1) document.getElementById('cart-sidebar').hidden=false;
   items.innerHTML = CART.map(l=>`
     <div class="cart-item" style="display:flex;gap:1rem;align-items:flex-start;padding:1rem 0;border-bottom:1px solid var(--line);">
       <div style="flex-shrink:0;width:64px;height:64px;background:var(--surface);border-radius:var(--radius);overflow:hidden;display:flex;align-items:center;justify-content:center;">
@@ -212,19 +213,27 @@ function renderCart(){
 }
 
 function loadCart(){
+  document.getElementById('cart-sidebar').hidden=true;   // shown once the cart has items
   apiCartGet().then(d=>{
     if(d.ok){CART=d.cart;renderCart();}
+    else document.getElementById('cart-items').innerHTML='<div class="empty-state" style="text-align:center;padding:2rem;"><p style="color:var(--ink-2);">Couldn’t load your cart. Check your connection.</p><button class="btn-outline" type="button" style="margin-top:1rem;" onclick="location.reload()">Try again</button></div>';
   });
 }
 
-function updateQty(pid, size, qty){
-  apiCartUpdate({product_id:pid,size:size||null,qty})
-    .then(d=>{if(d.ok){CART=d.cart;renderCart();refreshCartBadge();}});
+// One cart change at a time: rapid taps on +/− would otherwise race each other
+let busy=false;
+function cartChange(req){
+  if(busy) return;
+  busy=true;
+  document.querySelectorAll('#cart-items button').forEach(b=>b.disabled=true);
+  req.then(d=>{
+    busy=false;
+    if(d.ok){CART=d.cart;refreshCartBadge();}
+    renderCart();
+  });
 }
-function removeItem(pid,size){
-  apiCartRemove({product_id:pid,size:size||null})
-    .then(d=>{if(d.ok){CART=d.cart;renderCart();refreshCartBadge();}});
-}
+function updateQty(pid, size, qty){ cartChange(apiCartUpdate({product_id:pid,size:size||null,qty})); }
+function removeItem(pid,size){ cartChange(apiCartRemove({product_id:pid,size:size||null})); }
 
 // Steps — step 2 gets its own history entry, so the top-left back button
 // and the Android back button return to the cart instead of leaving the page.
@@ -244,6 +253,12 @@ function goStep(n){
   window.scrollTo(0,0);
 }
 
+// Pickup can't be in the past (dates are the phone's local calendar day)
+const ymd = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const pickupDate = document.getElementById('pickup-date');
+pickupDate.min = ymd(new Date());
+pickupDate.max = ymd(new Date(Date.now() + 30*864e5));
+
 document.getElementById('proceed-btn').addEventListener('click',()=>{
   if(!CART.length) return;
   history.pushState({step:2},'');
@@ -257,11 +272,17 @@ window.addEventListener('popstate',()=>{
 if(history.state?.step) history.replaceState(null,'');   // reloaded mid-checkout: start at step 1
 
 document.getElementById('confirm-btn').addEventListener('click', async ()=>{
-  const date  = document.getElementById('pickup-date').value;
+  const btn   = document.getElementById('confirm-btn');
+  const msg   = document.getElementById('pickup-msg');
+  const date  = pickupDate.value;
   const time  = document.getElementById('pickup-time').value;
   const notes = document.getElementById('pickup-notes').value;
-  if(!date){ alert('Please select a pickup date.'); return; }
+  if(btn.disabled) return;                       // a double-tap must not place two reservations
+  if(!date) return showMsg(msg,'error','Please choose a pickup date.');
+  if(date < pickupDate.min || date > pickupDate.max) return showMsg(msg,'error','Pick a date between today and 30 days from now.');
+  btn.disabled = true; btn.classList.add('is-loading');
   const data=await apiOrderPlace({pickup_date:date,pickup_time:time,pickup_notes:notes,promo_code:PROMO_CODE});
+  btn.disabled = false; btn.classList.remove('is-loading');
   if(data.ok){
     document.getElementById('reservation-id').textContent='#'+data.order_id;
     CART=[];
@@ -269,18 +290,25 @@ document.getElementById('confirm-btn').addEventListener('click', async ()=>{
     history.replaceState({step:3},'');
     goStep(3);
     confetti();
-  } else { alert(data.error||'Could not place reservation.'); }
+  } else showMsg(msg,'error',data.error||'Could not place the reservation. Please try again.');
 });
 
 // Promo
+document.getElementById('promo-input').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); document.getElementById('promo-apply-btn').click(); } });
 document.getElementById('promo-apply-btn').addEventListener('click', async ()=>{
   const code=document.getElementById('promo-input').value.trim().toUpperCase();
   const msg=document.getElementById('promo-msg');
   if(!code) return showMsg(msg,'error','Enter a promo code.');
+  const btn=document.getElementById('promo-apply-btn');
+  btn.disabled=true;
   const data=await apiPromo({code});
+  btn.disabled=false;
   if(data.ok){
     PROMO_CODE=code; PROMO_DISC=data.discount;
-    showMsg(msg,'success',data.discount+'% off applied!');
+    // Only the bigger discount counts (member or promo), so say which one is used
+    showMsg(msg,'success', data.discount > memberDisc
+      ? data.discount+'% off applied!'
+      : `Code accepted, but your ${memberDisc}% member discount is bigger, so that one is used.`);
     renderCart();
   } else showMsg(msg,'error',data.error);
 });

@@ -96,7 +96,7 @@
         </div>
         <div class="stat-grid">
           <div class="stat-box"><div class="n" id="tier-discount-stat">0%</div><div class="l">Member Discount</div></div>
-          <div class="stat-box"><div class="n" id="tier-tuneups-stat">0</div><div class="l">Tune-ups Left</div></div>
+          <div class="stat-box"><div class="n" id="tier-tuneups-stat">0</div><div class="l">Free Service / yr</div></div>
           <div class="stat-box"><div class="n num" id="tier-orders-stat">0</div><div class="l">Reservations</div></div>
         </div>
       </div>
@@ -136,7 +136,7 @@
 </footer>
 
 <script type="module">
-import { qs, qsa, esc, peso, Toast, showMsg, openSignIn, icon } from './js/main.js';
+import { qs, qsa, esc, peso, showMsg, openSignIn, icon } from './js/main.js';
 import {
   auth, onAuthStateChanged,
   apiMe, apiLogout, apiWishlistGet, apiWishlistToggle, apiSettingsGet, apiOrdersGet,
@@ -148,7 +148,7 @@ import {
 import { updateProfile } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
 const TIER_DISC   = { Spoke: 5, Chain: 10, Peloton: 20 };
-const TIER_TUNEUP = { Spoke: 0, Chain: 1, Peloton: 999 };
+const TIER_SERVICE = { Spoke: '0', Chain: '1', Peloton: '∞' };   // Chain: 1 tune-up a year; Peloton: unlimited flat fixes
 
 // ── AUTH GATE ─────────────────────────────────────────────────
 function showSignedOut() {
@@ -192,12 +192,12 @@ const stopGate = onAuthStateChanged(auth, async (firebaseUser) => {
 
   // Membership stats
   const tn  = qs('#tier-name');       if (tn) tn.textContent         = user.tier;
-  const td  = qs('#tier-discount-stat'); if (td) td.textContent      = TIER_DISC[user.tier] + '%';
+  const td  = qs('#tier-discount-stat'); if (td) td.textContent      = (TIER_DISC[user.tier] ?? 0) + '%';
   apiSettingsGet().then(({ settings }) => {                       // live value from Admin → Membership Tiers
     const v = settings['tier_discount_' + user.tier];
     if (td && v != null) td.textContent = v + '%';
   });
-  const tt  = qs('#tier-tuneups-stat');  if (tt) tt.textContent      = TIER_TUNEUP[user.tier] === 999 ? '∞' : TIER_TUNEUP[user.tier];
+  const tt  = qs('#tier-tuneups-stat');  if (tt) tt.textContent      = TIER_SERVICE[user.tier] ?? '0';
   const tm  = qs('#tier-meta');  if (tm) tm.textContent = user.tier === 'Spoke' ? 'Free membership' : `${user.tier === 'Chain' ? '₱499' : '₱999'}/month · billed in-store`;
   const mid = qs('#member-id');  if (mid) mid.textContent = 'PH-' + user.id.slice(0, 6).toUpperCase();
   const up  = qs('#tier-upgrade-btn'); if (up && user.tier === 'Peloton') up.textContent = 'View tiers';
@@ -244,8 +244,12 @@ async function loadWishlist() {
   const body = qs('#wishlist-panel-body');
   if (!body) return;
   const res = await apiWishlistGet();
-  if (!res.ok || !res.wishlist.length) {
-    body.innerHTML = '<p style="color:var(--ink-3);font-size:0.85rem;">Your wishlist is empty.</p>';
+  if (!res.ok) {
+    body.innerHTML = '<p style="color:var(--ink-3);font-size:0.85rem;">Couldn’t load your wishlist. Pull down to refresh.</p>';
+    return;
+  }
+  if (!res.wishlist.length) {
+    body.innerHTML = '<p style="color:var(--ink-3);font-size:0.85rem;">Your wishlist is empty. Tap <strong>Add to wishlist</strong> on any product to save it here.</p>';
     return;
   }
   body.innerHTML = `
@@ -254,7 +258,7 @@ async function loadWishlist() {
         <div class="wishlist-item">
           <a href="product.html?id=${esc(p.product_id)}" class="wishlist-img-link">
             ${p.image
-              ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" />`
+              ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" />`
               : `<div class="wishlist-placeholder">${icon('bike')}</div>`}
           </a>
           <div class="wishlist-info">
@@ -267,8 +271,12 @@ async function loadWishlist() {
 
   qsa('.wishlist-remove').forEach(btn => {
     btn.addEventListener('click', async () => {
-      await apiWishlistToggle({ product_id: btn.dataset.pid });
-      loadWishlist();
+      if (btn.disabled) return;                       // a double-tap would toggle it back on
+      btn.disabled = true; btn.textContent = 'Removing…';
+      const res = await apiWishlistToggle({ product_id: btn.dataset.pid });
+      if (!res.ok) { btn.disabled = false; btn.textContent = 'Remove'; return; }
+      btn.closest('.wishlist-item')?.remove();
+      if (!qs('.wishlist-item')) loadWishlist();      // last one gone: show the empty message
     });
   });
 }
@@ -276,7 +284,6 @@ async function loadWishlist() {
 // ── SIGN OUT ──────────────────────────────────────────────────
 qs('#sign-out-link')?.addEventListener('click', async (e) => {
   e.preventDefault();
-  const { apiLogout } = await import('./js/firebase.js');
   await apiLogout();
   window.location.href = 'home.html';
 });
@@ -285,7 +292,9 @@ qs('#sign-out-link')?.addEventListener('click', async (e) => {
 qs('#notif-save-btn')?.addEventListener('click', async () => {
   const msg = qs('#notif-msg');
   const u   = auth.currentUser;
-  if (!u) return;
+  if (!u) return showMsg(msg, 'error', 'Please sign in again to save your preferences.');
+  const btn = qs('#notif-save-btn');
+  btn.disabled = true;
   try {
     await updateDoc(doc(db, 'users', u.uid), {
       notifications: qsa('.notif-list input[type=checkbox]').map(cb => cb.checked),
@@ -294,6 +303,7 @@ qs('#notif-save-btn')?.addEventListener('click', async () => {
   } catch (err) {
     showMsg(msg, 'error', err.message);
   }
+  btn.disabled = false;
 });
 </script>
 </body>
