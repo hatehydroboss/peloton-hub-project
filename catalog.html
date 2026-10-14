@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>PelotonHub — Catalog</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%230b0b0a' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%230b0b0a'/%3E%3Cline x1='16' y1='16' x2='16' y2='3' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='26' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='6' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/shop.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#ff4d23" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="apple-touch-icon" href="img/icons/icon-192.png" />
+</head>
+<body>
+<a href="#main" class="skip-link">Skip to content</a>
+<nav class="navbar">
+  <a href="home.html" class="logo"><span>Peloton<span class="dot">Hub</span></span></a>
+  <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+  <ul class="nav-links" id="nav-links">
+    <li><a href="home.html">Home</a></li>
+    <li><a href="catalog.html">Catalog</a></li>
+    <li><a href="membership.html">Membership</a></li>
+    <li><a href="events.html">Events</a></li>
+    <li><a href="support.html">Support</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="cart.html" class="icon-btn" aria-label="View cart">
+      <svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-cart"/></svg>
+      <span class="badge" hidden>0</span>
+    </a>
+    <a href="auth.html" class="btn-nav" id="nav-auth-btn">Sign In</a>
+  </div>
+</nav>
+
+<div class="page-header catalog-hero">
+  <p class="eyebrow">Shop</p>
+  <h1>Product Catalog</h1>
+  <p>Built bikes, parts and gear &mdash; reserve online, pay in-store at pickup.</p>
+  <div class="cat-tabs" id="cat-tabs" role="tablist" aria-label="Category">
+    <button type="button" class="cat-tab active" data-cat="">All</button>
+    <button type="button" class="cat-tab" data-cat="Built Bikes"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-bike"/></svg> Built Bikes</button>
+    <button type="button" class="cat-tab" data-cat="Bike Parts &amp; Accessories"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-gear"/></svg> Parts &amp; Accessories</button>
+  </div>
+</div>
+
+<main id="main" class="section">
+  <div class="catalog-layout">
+    <!-- FILTERS (sidebar on desktop, slide-up sheet on phones) -->
+    <div class="filter-backdrop" id="filter-backdrop"></div>
+    <aside class="filter-panel" id="filter-panel" aria-label="Filters">
+      <div class="filter-sheet-head"><strong>Filters</strong><button type="button" id="filter-done">Show results</button></div>
+      <div class="f-head"><span>Filters</span><button type="button" class="f-reset" id="filter-reset">Clear all</button></div>
+
+      <section class="f-group">
+        <h4 class="f-title">Type</h4>
+        <div id="filter-subs" class="f-options"></div>
+      </section>
+      <section class="f-group">
+        <h4 class="f-title">Brand</h4>
+        <div id="filter-brands" class="f-options"></div>
+      </section>
+      <section class="f-group">
+        <h4 class="f-title">Availability</h4>
+        <label class="f-switch"><input type="checkbox" id="filter-instock" /><span class="f-track" aria-hidden="true"></span> In stock only</label>
+      </section>
+    </aside>
+
+    <!-- RESULTS -->
+    <div class="catalog-main">
+      <p id="member-note" class="member-banner" hidden>
+        <svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-trophy"/></svg> You&rsquo;re on the <strong id="member-tier"></strong> tier &mdash; your member discount is applied automatically at checkout.
+      </p>
+      <div class="catalog-toolbar">
+        <div class="catalog-search"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-search"/></svg><input type="search" id="catalog-q" placeholder="Search bikes, parts, brands&hellip;" aria-label="Search products" /></div>
+        <button class="filter-open-btn" id="filter-open" type="button" aria-controls="filter-panel"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-sliders"/></svg> Filters <span class="count" id="filter-count" hidden></span></button>
+        <select id="catalog-sort" aria-label="Sort products" data-fancy data-fancy-label="Sort by">
+          <option value="name_asc">Name (A&ndash;Z)</option>
+          <option value="price_asc">Price: low to high</option>
+          <option value="price_desc">Price: high to low</option>
+          <option value="newest">Newest first</option>
+        </select>
+      </div>
+      <div class="catalog-meta">
+        <span id="result-count" class="result-count"></span>
+        <div id="active-chips" class="active-chips"></div>
+      </div>
+      <div class="p-grid" id="catalog-grid"></div>
+      <div class="catalog-pager" id="catalog-pagination"></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-grid">
+    <div class="footer-col">
+      <h4>PelotonHub</h4>
+      <p>A web-based platform for the local cycling community &mdash; combining retail, membership, and social impact into one digital ecosystem.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Shop</h4>
+      <ul>
+        <li><a href="catalog.html?cat=Built+Bikes">Built Bikes</a></li>
+        <li><a href="catalog.html?cat=Bike+Parts+%26+Accessories">Parts &amp; Accessories</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Community</h4>
+      <ul>
+        <li><a href="events.html">Group Rides</a></li>
+        <li><a href="events.html">Charity Events</a></li>
+        <li><a href="membership.html">Membership Tiers</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Account</h4>
+      <ul>
+        <li><a href="auth.html">Sign In / Register</a></li>
+        <li><a href="profile.html">My Profile</a></li>
+        <li><a href="orders.html">Order History</a></li>
+        <li><a href="support.html">Support</a></li>
+        <li><a href="terms.html">Terms &amp; Privacy</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">&copy; 2026 PelotonHub. All rights reserved.</div>
+</footer>
+
+<script type="module">
+import { esc, peso, getUser, skeletonCards, productCard } from './js/main.js';
+import { apiCatalog } from './js/firebase.js';
+
+function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1):'';}
+
+const PER_PAGE = 12;
+let state = {
+  q:'', cat:'', sub:'', brands:[],
+  instock:false, sort:'name_asc', page:1
+};
+
+// Pre-fill from URL (?cat= or ?sub=)
+(()=>{
+  const params = new URLSearchParams(location.search);
+  if(params.get('cat'))  state.cat = params.get('cat');
+  if(params.get('sub'))  state.sub = params.get('sub');
+  if(params.get('q'))    state.q   = params.get('q');
+})();
+
+function buildParams(){
+  const p={sort:state.sort,page:state.page,per_page:PER_PAGE};
+  if(state.q)       p.q=state.q;
+  if(state.cat)     p.cat=state.cat;
+  if(state.sub)     p.sub=state.sub;
+  if(state.brands.length) p.brand=state.brands.join(',');
+  if(state.instock) p.stock='in';
+  return p;
+}
+
+let FILTERS = null;   // option names + counts from the catalog
+function loadFilters(){
+  apiCatalog({per_page:1}).then(d=>{
+    if(!d.ok) return;
+    FILTERS = d.filters;
+    renderFilters();
+  });
+}
+
+function option(kind, value, label, count, checked, type){
+  return `<label class="f-opt">
+      <input type="${type}" name="f-${kind}" class="filter-${kind}" value="${esc(value)}" ${checked?'checked':''} />
+      <span class="f-box" aria-hidden="true"></span>
+      <span class="f-label">${esc(label)}</span>
+      ${count!=null?`<span class="f-count">${count}</span>`:''}
+    </label>`;
+}
+
+function renderFilters(){
+  if(!FILTERS) return;
+  const c = FILTERS.counts || {};
+  // Sub-categories shown under the active category tab
+  const subs = FILTERS.sub_categories.filter(s => !state.cat || (s in (c.sub_category||{}) && subBelongs(s, state.cat)));
+  document.getElementById('filter-subs').innerHTML =
+    option('sub', '', 'All types', null, !state.sub, 'radio') +
+    subs.map(s => option('sub', s, s, (c.sub_category||{})[s], state.sub===s, 'radio')).join('');
+  document.getElementById('filter-brands').innerHTML =
+    FILTERS.brands.map(b => option('brand', b, b, (c.brand||{})[b], state.brands.includes(b), 'checkbox')).join('');
+  document.getElementById('filter-instock').checked = state.instock;
+  document.querySelectorAll('.cat-tab').forEach(t => t.classList.toggle('active', t.dataset.cat === state.cat));
+  attachFilterListeners();
+}
+
+// Which category a sub-category sits in (bike types vs parts)
+const BIKE_SUBS = ['Mountain Bikes','Road & Gravel Bikes','Urban & Commuter Bikes'];
+function subBelongs(sub, cat){ return cat === 'Built Bikes' ? BIKE_SUBS.includes(sub) : !BIKE_SUBS.includes(sub); }
+
+function attachFilterListeners(){
+  document.querySelectorAll('.filter-sub').forEach(rb=>rb.addEventListener('change',()=>{state.sub=rb.value;state.page=1;loadProducts();}));
+  document.querySelectorAll('.filter-brand').forEach(cb=>cb.addEventListener('change',()=>{
+    if(cb.checked){if(!state.brands.includes(cb.value))state.brands.push(cb.value);}
+    else state.brands=state.brands.filter(b=>b!==cb.value);
+    state.page=1;loadProducts();
+  }));
+}
+
+// Category tabs
+document.querySelectorAll('.cat-tab').forEach(t=>t.addEventListener('click',()=>{
+  state.cat=t.dataset.cat;
+  if(state.sub && state.cat && !subBelongs(state.sub, state.cat)) state.sub='';
+  state.page=1; renderFilters(); loadProducts();
+}));
+
+// Active filter chips (tap to remove)
+function renderChips(){
+  const chips=[];
+  if(state.cat)  chips.push(['cat', state.cat, state.cat]);
+  if(state.sub)  chips.push(['sub', state.sub, state.sub]);
+  state.brands.forEach(b=>chips.push(['brand', b, b]));
+  if(state.instock) chips.push(['instock', '', 'In stock']);
+  if(state.q)    chips.push(['q', state.q, '“'+state.q+'”']);
+  const box=document.getElementById('active-chips');
+  box.innerHTML=chips.map(([k,v,l])=>`<button type="button" class="chip" data-k="${k}" data-v="${esc(v)}">${esc(l)} <span aria-hidden="true">&times;</span></button>`).join('');
+  box.querySelectorAll('.chip').forEach(ch=>ch.addEventListener('click',()=>{
+    const {k,v}=ch.dataset;
+    if(k==='cat') state.cat='';
+    if(k==='sub') state.sub='';
+    if(k==='brand') state.brands=state.brands.filter(b=>b!==v);
+    if(k==='instock') state.instock=false;
+    if(k==='q'){ state.q=''; document.getElementById('catalog-q').value=''; }
+    state.page=1; renderFilters(); loadProducts();
+  }));
+}
+
+function loadProducts(){
+  const grid=document.getElementById('catalog-grid');
+  grid.innerHTML=skeletonCards(6);
+  updateFilterCount();
+  renderChips();
+  apiCatalog(buildParams()).then(d=>{
+    if(!d.ok){grid.innerHTML='<div class="empty-results"><div class="er-ico"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-offline"/></svg></div><h3>Couldn’t load products</h3><p>Check your connection and try again.</p><button class="btn-outline" type="button" onclick="location.reload()">Retry</button></div>';return;}
+    const from = d.total ? (state.page-1)*PER_PAGE+1 : 0, to = Math.min(state.page*PER_PAGE, d.total);
+    document.getElementById('result-count').textContent = d.total ? `Showing ${from}–${to} of ${d.total} product${d.total===1?'':'s'}` : '';
+    grid.innerHTML=d.products.map(productCard).join('')||`
+      <div class="empty-results">
+        <div class="er-ico"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-search"/></svg></div>
+        <h3>No products match</h3>
+        <p>Try removing a filter or searching for something else.</p>
+        <button class="btn-outline" type="button" id="empty-reset">Clear all filters</button>
+      </div>`;
+    document.getElementById('empty-reset')?.addEventListener('click',()=>document.getElementById('filter-reset').click());
+
+    // Pagination
+    const pages = Math.ceil(d.total / PER_PAGE);
+    const pg    = document.getElementById('catalog-pagination');
+    pg.innerHTML = '';
+
+    if(pages <= 1){ return; } // no pagination needed
+
+    // ── helper: make a page button ──────────────────────────
+    function makeBtn(label, pageNum, isActive, isDisabled, kind){
+      const btn = document.createElement('button');
+      btn.type      = 'button';
+      btn.className = 'pg-btn' + (kind ? ' pg-' + kind : '') + (isActive ? ' is-active' : '');
+      btn.disabled  = isDisabled;
+      if(kind === 'prev')      { btn.innerHTML = '<svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-chevron-left"/></svg><span>Prev</span>'; btn.setAttribute('aria-label', 'Previous page'); }
+      else if(kind === 'next') { btn.innerHTML = '<span>Next</span><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-chevron-right"/></svg>'; btn.setAttribute('aria-label', 'Next page'); }
+      else                     { btn.textContent = label; btn.setAttribute('aria-label', 'Page ' + label); }
+      if(isActive) btn.setAttribute('aria-current', 'page');
+      if(!isActive && !isDisabled){
+        btn.addEventListener('click', () => {
+          state.page = pageNum;
+          loadProducts();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      }
+      return btn;
+    }
+
+    // ── Prev button ─────────────────────────────────────────
+    // makeBtn already wires the click (go to that page) — no second handler here
+    pg.appendChild(makeBtn('Prev', state.page - 1, false, state.page === 1, 'prev'));
+
+    // ── Page number buttons (with ellipsis for large page counts) ──
+    const delta = 2; // pages to show either side of active
+    let pagesToShow = new Set();
+
+    pagesToShow.add(1);
+    pagesToShow.add(pages);
+    for(let i = Math.max(2, state.page - delta); i <= Math.min(pages - 1, state.page + delta); i++){
+      pagesToShow.add(i);
+    }
+    pagesToShow = [...pagesToShow].sort((a,b) => a - b);
+
+    let prev = 0;
+    pagesToShow.forEach(p => {
+      if(p - prev > 1){
+        // Ellipsis gap
+        const dots = document.createElement('span');
+        dots.textContent = '…';
+        dots.className = 'pg-dots';
+        pg.appendChild(dots);
+      }
+      pg.appendChild(makeBtn(p, p, p === state.page, false));
+      prev = p;
+    });
+
+    // ── Next button ─────────────────────────────────────────
+    pg.appendChild(makeBtn('Next', state.page + 1, false, state.page === pages, 'next'));
+
+    // ── Page info label ─────────────────────────────────────
+    const info = document.createElement('span');
+    info.textContent = `Page ${state.page} of ${pages}`;
+    info.className = 'pg-info';
+    pg.appendChild(info);
+  });
+}
+
+// Toolbar events
+let searchTimer;
+document.getElementById('catalog-q').addEventListener('input',e=>{
+  clearTimeout(searchTimer);
+  searchTimer=setTimeout(()=>{state.q=e.target.value;state.page=1;loadProducts();},300);
+});
+document.getElementById('catalog-sort').addEventListener('change',e=>{state.sort=e.target.value;state.page=1;loadProducts();});
+document.getElementById('filter-instock').addEventListener('change',e=>{state.instock=e.target.checked;state.page=1;loadProducts();});
+document.getElementById('filter-reset').addEventListener('click',()=>{
+  state={q:'',cat:'',sub:'',brands:[],instock:false,sort:state.sort,page:1};
+  document.getElementById('catalog-q').value='';
+  renderFilters();
+  loadProducts();
+});
+
+// Mobile filter sheet
+const panel = document.getElementById('filter-panel'), backdrop = document.getElementById('filter-backdrop');
+function openFilters(open){ panel.classList.toggle('open', open); backdrop.classList.toggle('open', open); document.body.classList.toggle('filters-open', open); document.body.style.overflow = open ? 'hidden' : ''; }
+document.getElementById('filter-open').addEventListener('click', () => openFilters(true));
+document.getElementById('filter-done').addEventListener('click', () => openFilters(false));
+backdrop.addEventListener('click', () => openFilters(false));
+function updateFilterCount(){
+  const n = (state.cat?1:0) + (state.sub?1:0) + state.brands.length + (state.instock?1:0);
+  const el = document.getElementById('filter-count'); el.textContent = n; el.hidden = !n;
+}
+
+// Member tier note
+getUser().then(u=>{
+  if(!u) return;
+  document.getElementById('member-tier').textContent=u.tier;
+  document.getElementById('member-note').hidden=false;
+});
+
+document.getElementById('catalog-q').value=state.q;
+loadFilters();
+loadProducts();
+</script>
+</body>
+</html>

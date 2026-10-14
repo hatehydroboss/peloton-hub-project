@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Manage your PelotonHub profile, membership tier, wishlist, and notification preferences." />
+  <title>PelotonHub — My Profile</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%230b0b0a' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%230b0b0a'/%3E%3Cline x1='16' y1='16' x2='16' y2='3' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='26' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='6' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&amp;family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@500;600&amp;display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/shop.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#ff4d23" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="apple-touch-icon" href="img/icons/icon-192.png" />
+</head>
+<body>
+<a href="#main" class="skip-link">Skip to content</a>
+
+<nav class="navbar">
+  <a href="home.html" class="logo"><span>Peloton<span class="dot">Hub</span></span></a>
+  <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+  <ul class="nav-links" id="nav-links">
+    <li><a href="home.html">Home</a></li>
+    <li><a href="catalog.html">Catalog</a></li>
+    <li><a href="membership.html">Membership</a></li>
+    <li><a href="events.html">Events</a></li>
+    <li><a href="support.html">Support</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="cart.html" class="icon-btn" aria-label="View cart"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-cart"/></svg><span class="badge" hidden>0</span></a>
+  </div>
+</nav>
+
+<main id="main" class="section">
+  <div class="profile-layout">
+
+    <!-- SIDEBAR -->
+    <div>
+      <div class="member-card">
+        <div class="member-avatar" id="member-initial">M</div>
+        <h3 id="member-name">Member</h3>
+        <p class="email" id="member-email">member@example.com</p>
+        <span class="tier-chip">&hellip;</span>
+        <div class="qr-block">
+          <div class="qr-box">
+            <div class="lbl">Member ID</div>
+            <div class="member-id num" id="member-id">&mdash;</div>
+            <div class="note">Give this at the counter for your member discount</div>
+          </div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav" aria-label="Account">
+        <a href="profile.html" class="active">My Profile</a>
+        <a href="orders.html">Order History</a>
+        <a href="membership.html">Membership</a>
+        <a href="events.html">My Events</a>
+        <a href="#wishlist">Wishlist</a>
+        <a href="#" id="sign-out-link">Sign Out</a>
+      </nav>
+    </div>
+
+    <!-- MAIN -->
+    <div>
+      <!-- Personal Info -->
+      <div class="panel">
+        <div class="panel-head"><p>Personal Information</p></div>
+        <div class="form-row">
+          <div class="form-group"><label for="profile-first">First Name</label><input id="profile-first" type="text" /></div>
+          <div class="form-group"><label for="profile-last">Last Name</label><input id="profile-last" type="text" /></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label for="profile-email">Email</label><input id="profile-email" type="email" readonly /></div>
+          <div class="form-group"><label for="profile-mobile">Mobile</label><input id="profile-mobile" type="tel" placeholder="+63 9XX XXX XXXX" /></div>
+        </div>
+        <div class="form-group"><label for="profile-address">Address (optional)</label><input id="profile-address" type="text" placeholder="Barangay, City, Province" /></div>
+        <p class="form-msg" id="profile-msg" aria-live="polite"></p>
+        <button class="btn-primary" id="profile-save-btn" type="button" style="padding: 0.65rem 1.8rem; margin-top: 0.5rem;">Save Changes</button>
+      </div>
+
+      <!-- Membership Status -->
+      <div class="panel">
+        <p class="section-title" style="margin-bottom:1.5rem;">Membership Status</p>
+        <div class="tier-status-row">
+          <div>
+            <div class="name" id="tier-name">Tier</div>
+            <div class="meta" id="tier-meta"></div>
+          </div>
+          <button class="btn-primary" id="tier-upgrade-btn" type="button" style="padding: 0.5rem 1.2rem; font-size: 0.72rem;">Upgrade</button>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-box"><div class="n" id="tier-discount-stat">0%</div><div class="l">Member Discount</div></div>
+          <div class="stat-box"><div class="n" id="tier-tuneups-stat">0</div><div class="l">Tune-ups Left</div></div>
+          <div class="stat-box"><div class="n num" id="tier-orders-stat">0</div><div class="l">Reservations</div></div>
+        </div>
+      </div>
+
+      <!-- Wishlist -->
+      <div class="panel" id="wishlist">
+        <p class="section-title" style="margin-bottom:1.5rem;">Wishlist / Saved Items</p>
+        <div id="wishlist-panel-body"></div>
+      </div>
+
+      <!-- Notifications -->
+      <div class="panel">
+        <p class="section-title" style="margin-bottom:1.5rem;">Notification Preferences</p>
+        <div class="notif-list">
+          <label><input type="checkbox" checked /> Order &amp; Reservation Alerts</label>
+          <label><input type="checkbox" checked /> Promotional Offers &amp; Deals</label>
+          <label><input type="checkbox" checked /> Community Event Reminders</label>
+          <label><input type="checkbox" /> New Product Launches</label>
+          <label><input type="checkbox" checked /> Membership Renewal Reminders</label>
+        </div>
+        <p class="form-msg" id="notif-msg" aria-live="polite"></p>
+        <button class="btn-primary" id="notif-save-btn" type="button" style="padding: 0.65rem 1.8rem; margin-top: 1.2rem;">Save Preferences</button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="footer-grid">
+    <div class="footer-col"><h4>PelotonHub</h4><p>A web-based platform for the local cycling community &mdash; combining retail, membership, and social impact into one digital ecosystem.</p></div>
+    <div class="footer-col"><h4>Shop</h4><ul><li><a href="catalog.html?cat=Built+Bikes">Built Bikes</a></li><li><a href="catalog.html?cat=Bike+Parts+%26+Accessories">Parts &amp; Accessories</a></li></ul></div>
+    <div class="footer-col"><h4>Community</h4><ul><li><a href="events.html">Group Rides</a></li><li><a href="events.html">Charity Events</a></li><li><a href="membership.html">Membership Tiers</a></li></ul></div>
+    <div class="footer-col"><h4>Account</h4><ul><li><a href="auth.html">Sign In / Register</a></li><li><a href="profile.html">My Profile</a></li><li><a href="orders.html">Order History</a></li><li><a href="support.html">Support</a></li></ul></div>
+  </div>
+  <div class="footer-bottom">&copy; 2026 PelotonHub. All rights reserved.</div>
+</footer>
+
+<script type="module">
+import { qs, qsa, esc, peso, Toast, showMsg, openSignIn, icon } from './js/main.js';
+import {
+  auth, onAuthStateChanged,
+  apiMe, apiLogout, apiWishlistGet, apiWishlistToggle, apiSettingsGet, apiOrdersGet,
+  db,
+} from './js/firebase.js';
+import {
+  doc, updateDoc,
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { updateProfile } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
+const TIER_DISC   = { Spoke: 5, Chain: 10, Peloton: 20 };
+const TIER_TUNEUP = { Spoke: 0, Chain: 1, Peloton: 999 };
+
+// ── AUTH GATE ─────────────────────────────────────────────────
+function showSignedOut() {
+  qs('#main').innerHTML = `
+    <div class="empty-results" style="max-width:520px;margin:2rem auto;">
+      <div class="er-ico"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-user"/></svg></div>
+      <h3>Sign in to see your profile</h3>
+      <p>Your membership, wishlist and saved details live in your account.</p>
+      <button class="btn-primary" type="button" data-signin>Sign In</button>
+      <p style="margin-top:1rem;font-size:.82rem;">New here? <a href="auth.html" data-register style="color:var(--accent);font-weight:700;">Create an account</a></p>
+    </div>`;
+  openSignIn();
+}
+const stopGate = onAuthStateChanged(auth, async (firebaseUser) => {
+  stopGate();
+  if (!firebaseUser) { showSignedOut(); return; }
+  const res = await apiMe();
+  if (!res.ok || !res.user) { showSignedOut(); return; }
+  const user = res.user;
+
+  // Populate sidebar card
+  const initial = (user.first_name||'?')[0].toUpperCase();
+  const avatar  = qs('#member-initial');
+  if (avatar)  avatar.textContent  = initial;
+  const nameEl  = qs('#member-name');
+  if (nameEl)  nameEl.textContent  = user.name || `${user.first_name} ${user.last_name}`;
+  const emailEl = qs('#member-email');
+  if (emailEl) emailEl.textContent = user.email;
+  const chip    = qs('.tier-chip');
+  if (chip)    chip.textContent    = user.tier;
+
+  // Populate form fields
+  const f = qs('#profile-first');  if (f) f.value = user.first_name || '';
+  const l = qs('#profile-last');   if (l) l.value = user.last_name  || '';
+  const e = qs('#profile-email');  if (e) e.value = user.email      || '';
+  const mo = qs('#profile-mobile');  if (mo) mo.value = user.mobile  || '';
+  const ad = qs('#profile-address'); if (ad) ad.value = user.address || '';
+  if (user.notifications) {
+    qsa('.notif-list input[type=checkbox]').forEach((cb, i) => { if (i in user.notifications) cb.checked = !!user.notifications[i]; });
+  }
+
+  // Membership stats
+  const tn  = qs('#tier-name');       if (tn) tn.textContent         = user.tier;
+  const td  = qs('#tier-discount-stat'); if (td) td.textContent      = TIER_DISC[user.tier] + '%';
+  apiSettingsGet().then(({ settings }) => {                       // live value from Admin → Membership Tiers
+    const v = settings['tier_discount_' + user.tier];
+    if (td && v != null) td.textContent = v + '%';
+  });
+  const tt  = qs('#tier-tuneups-stat');  if (tt) tt.textContent      = TIER_TUNEUP[user.tier] === 999 ? '∞' : TIER_TUNEUP[user.tier];
+  const tm  = qs('#tier-meta');  if (tm) tm.textContent = user.tier === 'Spoke' ? 'Free membership' : `${user.tier === 'Chain' ? '₱499' : '₱999'}/month · billed in-store`;
+  const mid = qs('#member-id');  if (mid) mid.textContent = 'PH-' + user.id.slice(0, 6).toUpperCase();
+  const up  = qs('#tier-upgrade-btn'); if (up && user.tier === 'Peloton') up.textContent = 'View tiers';
+  apiOrdersGet().then(r => { const to = qs('#tier-orders-stat'); if (to && r.ok) to.textContent = r.orders.filter(o => o.status !== 'cancelled').length; });
+
+  // Save profile
+  qs('#profile-save-btn')?.addEventListener('click', async () => {
+    const btn = qs('#profile-save-btn');
+    const msg = qs('#profile-msg');
+    btn.disabled = true;
+    const first = qs('#profile-first').value.trim();
+    const last  = qs('#profile-last').value.trim();
+    if (!first || !last) { showMsg(msg, 'error', 'First and last name are required'); btn.disabled = false; return; }
+    try {
+      await updateDoc(doc(db, 'users', firebaseUser.uid), {
+        first_name: first,
+        last_name:  last,
+        mobile:     qs('#profile-mobile')?.value.trim()  || '',
+        address:    qs('#profile-address')?.value.trim() || '',
+        name:       `${first} ${last}`,
+      });
+      await updateProfile(firebaseUser, { displayName: `${first} ${last}` });   // navbar greeting
+      if (nameEl) nameEl.textContent = `${first} ${last}`;
+      const avatar = qs('#member-initial'); if (avatar) avatar.textContent = first[0].toUpperCase();
+      const navBtn = qs('#nav-auth-btn');   if (navBtn) navBtn.textContent = first;
+      showMsg(msg, 'success', 'Profile saved');
+    } catch (err) {
+      showMsg(msg, 'error', err.message);
+    }
+    btn.disabled = false;
+  });
+
+  // Tier upgrade
+  qs('#tier-upgrade-btn')?.addEventListener('click', () => {
+    window.location.href = 'membership.html';
+  });
+
+  // Load wishlist
+  await loadWishlist();
+});
+
+// ── WISHLIST ──────────────────────────────────────────────────
+async function loadWishlist() {
+  const body = qs('#wishlist-panel-body');
+  if (!body) return;
+  const res = await apiWishlistGet();
+  if (!res.ok || !res.wishlist.length) {
+    body.innerHTML = '<p style="color:var(--ink-3);font-size:0.85rem;">Your wishlist is empty.</p>';
+    return;
+  }
+  body.innerHTML = `
+    <div class="wishlist-grid">
+      ${res.wishlist.map(p => `
+        <div class="wishlist-item">
+          <a href="product.html?id=${esc(p.product_id)}" class="wishlist-img-link">
+            ${p.image
+              ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" />`
+              : `<div class="wishlist-placeholder">${icon('bike')}</div>`}
+          </a>
+          <div class="wishlist-info">
+            <a href="product.html?id=${esc(p.product_id)}" class="wishlist-name">${esc(p.name)}</a>
+            <p class="wishlist-price">${peso(p.price)}</p>
+          </div>
+          <button class="btn-ghost wishlist-remove" data-pid="${esc(p.product_id)}" type="button">Remove</button>
+        </div>`).join('')}
+    </div>`;
+
+  qsa('.wishlist-remove').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await apiWishlistToggle({ product_id: btn.dataset.pid });
+      loadWishlist();
+    });
+  });
+}
+
+// ── SIGN OUT ──────────────────────────────────────────────────
+qs('#sign-out-link')?.addEventListener('click', async (e) => {
+  e.preventDefault();
+  const { apiLogout } = await import('./js/firebase.js');
+  await apiLogout();
+  window.location.href = 'home.html';
+});
+
+// ── NOTIFICATION PREFS (saved on the member's profile) ───────
+qs('#notif-save-btn')?.addEventListener('click', async () => {
+  const msg = qs('#notif-msg');
+  const u   = auth.currentUser;
+  if (!u) return;
+  try {
+    await updateDoc(doc(db, 'users', u.uid), {
+      notifications: qsa('.notif-list input[type=checkbox]').map(cb => cb.checked),
+    });
+    showMsg(msg, 'success', 'Notification preferences saved');
+  } catch (err) {
+    showMsg(msg, 'error', err.message);
+  }
+});
+</script>
+</body>
+</html>

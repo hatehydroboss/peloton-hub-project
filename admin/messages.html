@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PelotonHub Admin — Messages</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%230b0b0a' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%230b0b0a'/%3E%3Cline x1='16' y1='16' x2='16' y2='3' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='26' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='6' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/styles.css" /><link rel="stylesheet" href="css/admin.css" />
+  <style>
+    .msg-status-pill{padding:2px 10px;font-size:0.62rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;border-radius:99px;flex-shrink:0;}
+    .msg-status-pill.new{background:#fef2f2;color:#dc2626;}
+    .msg-status-pill.replied{background:var(--surface);color:var(--ink-2);border:1px solid var(--line);}
+    .msg-status-pill.resolved{background:#f0fdf4;color:#16a34a;}
+  </style>
+</head>
+<body class="admin-body">
+<button class="admin-sidebar-toggle" id="admin-sidebar-toggle" aria-label="Toggle menu">&#9776;</button>
+<div class="admin-shell">
+<aside class="admin-sidebar" id="admin-sidebar">
+  <div class="admin-sidebar-brand">
+    <span>Peloton<span class="dot">Hub</span></span><span class="tag-admin">Admin</span>
+  </div>
+  <ul class="admin-nav">
+    <li class="admin-nav-label">Overview</li>
+    <li><a href="index.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-sliders"/></svg></span> Dashboard</a></li>
+    <li class="admin-nav-label">Catalog</li>
+    <li><a href="products.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-bike"/></svg></span> Products</a></li>
+    <li><a href="stock.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-clipboard"/></svg></span> Stock Management</a></li>
+    <li><a href="orders.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-receipt"/></svg></span> Orders</a></li>
+    <li class="admin-nav-label">Community</li>
+    <li><a href="customers.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-user"/></svg></span> Customers</a></li>
+    <li><a href="events.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-calendar"/></svg></span> Events &amp; RSVPs</a></li>
+    <li><a href="membership.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-trophy"/></svg></span> Membership Tiers</a></li>
+    <li class="admin-nav-label">Support</li>
+    <li><a href="messages.html" class="active"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-bulb"/></svg></span> Messages</a></li>
+  </ul>
+  <div class="admin-sidebar-foot">
+    <div class="admin-avatar" id="admin-initials">SA</div>
+    <div class="who">
+      <div class="name" id="admin-name">Shop Admin</div>
+      <div class="role">Administrator</div>
+    </div>
+    <button class="admin-logout-btn" id="admin-logout-btn" type="button" aria-label="Log out" title="Log out">&#10148;</button>
+  </div>
+</aside>
+
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <div><h1>Messages</h1><p class="sub"><span id="unread-count">0</span> new support tickets</p></div>
+      <div class="admin-topbar-right">
+        <a href="../home.html" class="btn-nav" style="background:var(--black);" target="_blank" rel="noopener">View Storefront</a>
+      </div>
+    </header>
+    <main class="admin-content">
+      <div class="admin-card">
+        <div class="data-toolbar">
+          <div class="admin-search"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-search"/></svg><input type="text" id="m-search" placeholder="Search by name, email or topic&hellip;" /></div>
+          <select id="m-filter-status">
+            <option value="">All Statuses</option>
+            <option value="new">New</option>
+            <option value="replied">Replied</option>
+            <option value="resolved">Resolved</option>
+          </select>
+        </div>
+        <div class="msg-list" id="messages-list"><p style="font-size:0.85rem;color:var(--ink-3)">Loading&hellip;</p></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- MESSAGE DETAIL MODAL -->
+<div class="modal-overlay" id="message-modal">
+  <div class="modal-box" style="max-width:560px;">
+    <button class="modal-close" id="message-modal-close" aria-label="Close">&times;</button>
+    <div class="admin-modal-body">
+      <h2 id="mm-name"></h2>
+      <p style="font-size:0.8rem;color:var(--ink-3);margin-bottom:1rem;"><span id="mm-email"></span> &middot; <span id="mm-date"></span></p>
+      <p style="font-size:0.7rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;" id="mm-topic"></p>
+      <p style="font-size:0.68rem;color:var(--ink-3);margin-bottom:1rem;" id="mm-orderref"></p>
+      <div class="panel" style="padding:1.2rem;margin-bottom:1.4rem;background:var(--surface);border:1px solid var(--line);">
+        <p style="font-size:0.88rem;line-height:1.7;white-space:pre-wrap;" id="mm-message"></p>
+      </div>
+      <div id="mm-replies" style="margin-bottom:1.4rem;"></div>
+      <div class="form-group">
+        <label for="mm-reply">Reply</label>
+        <textarea id="mm-reply" rows="3" placeholder="Type your reply&hellip;"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-outline btn-sm" id="mm-resolve-btn" type="button">Mark Resolved</button>
+        <button class="btn-primary btn-sm" id="mm-reply-btn" type="button">Send Reply</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="ph-toast" aria-live="polite"></div>
+<script>
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1):'';}
+function toast(m){const t=document.getElementById('ph-toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+function qs(s){return document.querySelector(s);}
+function initials(name){return (name||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();}
+
+let ALL_MSGS=[];
+const state={search:'',status:''};
+let activeId=null;
+
+function render(){
+  let list=ALL_MSGS.slice();
+  if(state.search){const q=state.search.toLowerCase();list=list.filter(m=>(m.name||'').toLowerCase().includes(q)||(m.topic||'').toLowerCase().includes(q)||(m.email||'').toLowerCase().includes(q));}
+  if(state.status) list=list.filter(m=>m.status===state.status);
+  qs('#unread-count').textContent=ALL_MSGS.filter(m=>m.status==='new').length;
+  qs('#messages-list').innerHTML=list.map(m=>`
+    <div class="msg-item ${m.status==='new'?'unread':''}" onclick="openMessage('${esc(m.id)}')" style="cursor:pointer;">
+      <div class="msg-ava">${initials(m.name)}</div>
+      <div class="msg-body">
+        <div class="msg-top"><span class="msg-name">${esc(m.name)}</span><span class="msg-time">${esc((m.created_at||'').slice(0,10))}</span></div>
+        <div class="msg-topic">${esc(m.topic)}</div>
+        <div class="msg-snippet">${esc(m.message?.slice(0,100))}${(m.message||'').length>100?'…':''}</div>
+      </div>
+      <span class="msg-status-pill ${m.status}">${cap(m.status)}</span>
+    </div>`).join('')||(ALL_MSGS.length===0?'<p style="font-size:0.85rem;color:var(--ink-3);padding:1rem 0;">No messages yet. Tickets submitted via the storefront Support page appear here.</p>':'<p style="font-size:0.85rem;color:var(--ink-3);padding:1rem 0;">No messages match your filters.</p>');
+}
+
+function loadMessages(){
+  const params=new URLSearchParams();
+  if(state.search) params.set('q',state.search);
+  if(state.status) params.set('status',state.status);
+  FB.apiAdminMessagesGet(Object.fromEntries(params)).then(d=>{if(d.ok){ALL_MSGS=d.messages;render();}});
+}
+
+qs('#m-search').addEventListener('input',e=>{state.search=e.target.value;render();});
+qs('#m-filter-status').addEventListener('change',e=>{state.status=e.target.value;render();});
+
+const modal=qs('#message-modal');
+window.openMessage=function(id){
+  const m=ALL_MSGS.find(x=>x.id===id);if(!m)return;
+  activeId=id;
+  qs('#mm-name').textContent=m.name;
+  qs('#mm-email').textContent=m.email;
+  qs('#mm-date').textContent=(m.created_at||'').slice(0,10);
+  qs('#mm-topic').textContent=m.topic;
+  qs('#mm-orderref').textContent=m.order_ref?'Order Reference: '+m.order_ref:'';
+  qs('#mm-message').textContent=m.message;
+  qs('#mm-reply').value='';
+  loadReplies(id);
+  modal.classList.add('open');
+  // Mark as read (status new → replied)
+  if(m.status==='new'){
+    FB.apiAdminMessageStatus({id,status:'replied'})
+      .then(()=>loadMessages());
+  }
+};
+qs('#message-modal-close').addEventListener('click',()=>modal.classList.remove('open'));
+modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('open');});
+
+// Replies already sent on this ticket
+function loadReplies(id){
+  const box=qs('#mm-replies');
+  box.innerHTML='<p style="font-size:0.75rem;color:var(--ink-3);">Loading replies&hellip;</p>';
+  FB.apiAdminMessageReplies({id}).then(d=>{
+    if(activeId!==id)return;
+    if(!d.ok||!d.replies.length){box.innerHTML='';return;}
+    box.innerHTML='<p style="font-size:0.7rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:0.5rem;">Replies sent ('+d.replies.length+')</p>'+
+      d.replies.map(r=>`<div style="border-left:3px solid var(--accent);padding:0.5rem 0.8rem;margin-bottom:0.5rem;background:var(--surface);">
+        <p style="font-size:0.85rem;white-space:pre-wrap;">${esc(r.reply)}</p>
+        <p style="font-size:0.68rem;color:var(--ink-3);margin-top:0.2rem;">${esc(r.admin_name||'Admin')} &middot; ${esc((r.created_at||'').slice(0,16).replace('T',' '))}</p>
+      </div>`).join('');
+  });
+}
+
+qs('#mm-reply-btn').addEventListener('click',()=>{
+  if(!activeId)return;
+  const btn=qs('#mm-reply-btn');
+  if(btn.disabled)return;
+  const text=qs('#mm-reply').value.trim();
+  if(!text){toast('Write a reply first');return;}
+  btn.disabled=true;btn.textContent='Sending…';      // one click = one reply
+  FB.apiAdminMessageReply({id:activeId,reply:text})
+    .then(d=>{if(d.ok){toast('Reply saved');modal.classList.remove('open');loadMessages();}else alert(d.error);})
+    .finally(()=>{btn.disabled=false;btn.textContent='Send Reply';});
+});
+
+qs('#mm-resolve-btn').addEventListener('click',()=>{
+  if(!activeId)return;
+  FB.apiAdminMessageStatus({id:activeId,status:'resolved'})
+    .then(d=>{if(d.ok){toast('Ticket resolved');modal.classList.remove('open');loadMessages();}else alert(d.error);});
+});
+
+document.addEventListener('admin-ready',()=>{
+  const toggle=document.getElementById('admin-sidebar-toggle');
+  const sidebar=document.getElementById('admin-sidebar');
+  if(toggle&&sidebar) toggle.addEventListener('click',()=>sidebar.classList.toggle('open'));
+  loadMessages();
+});
+</script>
+<script type="module" src="js/admin-common.js"></script>
+</body>
+</html>

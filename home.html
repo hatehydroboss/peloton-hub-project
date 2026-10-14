@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>PelotonHub — Your Bike Shop, Now Online</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%230b0b0a' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%230b0b0a'/%3E%3Cline x1='16' y1='16' x2='16' y2='3' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='26' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='6' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/shop.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#ff4d23" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="apple-touch-icon" href="img/icons/icon-192.png" />
+</head>
+<body>
+<a href="#main" class="skip-link">Skip to content</a>
+<nav class="navbar">
+  <a href="home.html" class="logo"><span>Peloton<span class="dot">Hub</span></span></a>
+  <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+  <ul class="nav-links" id="nav-links">
+    <li><a href="home.html">Home</a></li>
+    <li><a href="catalog.html">Catalog</a></li>
+    <li><a href="membership.html">Membership</a></li>
+    <li><a href="events.html">Events</a></li>
+    <li><a href="support.html">Support</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="cart.html" class="icon-btn" aria-label="View cart">
+      <svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-cart"/></svg>
+      <span class="badge" hidden>0</span>
+    </a>
+    <a href="auth.html" class="btn-nav" id="nav-auth-btn">Sign In</a>
+  </div>
+</nav>
+
+<main id="main">
+<!-- HERO -->
+<section class="hero hero-split">
+  <div class="hero-inner">
+    <div class="hero-copy">
+      <h1>Your Bike Shop,<br><em>Now Online.</em></h1>
+      <p>Browse our full catalog, join community rides, manage your membership, and reserve gear for in-store pickup &mdash; all in one place.</p>
+      <div class="hero-btns">
+        <a href="catalog.html"><button class="btn-primary" type="button">Shop the Catalog</button></a>
+        <a href="membership.html"><button class="btn-outline" type="button">View Memberships</button></a>
+      </div>
+      <ul class="hero-points">
+        <li><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-check"/></svg> Free 48-hour hold</li>
+        <li><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-check"/></svg> Member discounts</li>
+        <li><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-check"/></svg> Weekly group rides</li>
+      </ul>
+    </div>
+    <a class="hero-visual" href="product.html?id=mtb-fs-enduro" aria-label="Featured: Full-Suspension Enduro Bike">
+      <img src="img/products/fs-enduro.jpg" alt="Full-suspension enduro mountain bike" />
+      <span class="hero-tag"><small>Featured</small>Full-Suspension Enduro &middot; &#8369;89,500</span>
+    </a>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-bar">
+  <div class="marquee-track">
+    <span>Built Bikes &nbsp;&middot;&nbsp; Parts &amp; Components &nbsp;&middot;&nbsp; Accessories &nbsp;&middot;&nbsp; Apparel &nbsp;&middot;&nbsp; Spoke &mdash; Chain &mdash; Peloton &nbsp;&middot;&nbsp; Community Group Rides &nbsp;&middot;&nbsp; Charity Fundraising &nbsp;&middot;&nbsp; In-Store Pickup &nbsp;&middot;&nbsp;</span>
+    <span>Built Bikes &nbsp;&middot;&nbsp; Parts &amp; Components &nbsp;&middot;&nbsp; Accessories &nbsp;&middot;&nbsp; Apparel &nbsp;&middot;&nbsp; Spoke &mdash; Chain &mdash; Peloton &nbsp;&middot;&nbsp; Community Group Rides &nbsp;&middot;&nbsp; Charity Fundraising &nbsp;&middot;&nbsp; In-Store Pickup &nbsp;&middot;&nbsp;</span>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stat"><span class="num">31</span><div class="lbl">Bikes &amp; Products</div></div>
+  <div class="stat"><span class="num">48 hr</span><div class="lbl">Free Hold &middot; Pay at Pickup</div></div>
+  <div class="stat"><span class="num">3</span><div class="lbl">Membership Tiers</div></div>
+  <div class="stat"><span class="num">Weekly</span><div class="lbl">Community Group Rides</div></div>
+</div>
+
+<!-- CATEGORIES -->
+<section class="section">
+  <p class="section-title">Shop by Category</p>
+  <div class="section-head">
+    <h2 class="section-heading">Find your next ride</h2>
+    <a href="catalog.html" class="btn-ghost">Browse the catalog <svg class="picon arrow" aria-hidden="true"><use href="img/icons.svg#i-arrow-right"/></svg></a>
+  </div>
+  <div class="cat-grid">
+    <a href="catalog.html?sub=Mountain+Bikes"><div class="cat-card"><div class="cat-icon" aria-hidden="true"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-mountain"/></svg></div><h3>Mountain Bikes</h3><p>Hardtails, full-suspension, e-MTBs, and fat-tire builds for every trail.</p></div></a>
+    <a href="catalog.html?sub=Road+%26+Gravel+Bikes"><div class="cat-card"><div class="cat-icon" aria-hidden="true"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-road"/></svg></div><h3>Road &amp; Gravel Bikes</h3><p>Aero road, endurance, gravel, bikepacking, and cyclocross.</p></div></a>
+    <a href="catalog.html?sub=Urban+%26+Commuter+Bikes"><div class="cat-card"><div class="cat-icon" aria-hidden="true"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-city"/></svg></div><h3>Urban &amp; Commuter Bikes</h3><p>Step-through, fixie, folding, and electric commuter builds.</p></div></a>
+    <a href="catalog.html?sub=Drivetrain+%26+Components"><div class="cat-card"><div class="cat-icon" aria-hidden="true"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-gear"/></svg></div><h3>Drivetrain &amp; Components</h3><p>Cassettes, brakes, wheelsets, saddles, and pedals.</p></div></a>
+    <a href="catalog.html?sub=Safety+%26+Rider+Gear"><div class="cat-card"><div class="cat-icon" aria-hidden="true"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-helmet"/></svg></div><h3>Safety &amp; Rider Gear</h3><p>Helmets, lights, bib shorts, jackets, and gloves.</p></div></a>
+    <a href="catalog.html?sub=On-Bike+Storage+%26+Maintenance"><div class="cat-card"><div class="cat-icon" aria-hidden="true"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-tools"/></svg></div><h3>Storage &amp; Maintenance</h3><p>Frame bags, U-locks, pumps, multi-tools, and repair kits.</p></div></a>
+  </div>
+</section>
+
+<!-- NEW ARRIVALS -->
+<section class="section-band">
+  <div class="section" style="padding-top:0;padding-bottom:0;">
+    <p class="section-title">New Arrivals</p>
+    <div class="section-head">
+      <h2 class="section-heading">Fresh in the shop</h2>
+      <a href="catalog.html" class="btn-ghost head-more">View all products <svg class="picon arrow" aria-hidden="true"><use href="img/icons.svg#i-arrow-right"/></svg></a>
+    </div>
+    <div class="p-grid p-grid-4" id="new-arrivals">
+      <div class="skeleton-card p-card" aria-hidden="true"><div class="skeleton sk-img"></div><div class="sk-body"><div class="skeleton sk-line w40"></div><div class="skeleton sk-line w70"></div><div class="skeleton sk-line w30"></div></div></div><div class="skeleton-card p-card" aria-hidden="true"><div class="skeleton sk-img"></div><div class="sk-body"><div class="skeleton sk-line w40"></div><div class="skeleton sk-line w70"></div><div class="skeleton sk-line w30"></div></div></div><div class="skeleton-card p-card" aria-hidden="true"><div class="skeleton sk-img"></div><div class="sk-body"><div class="skeleton sk-line w40"></div><div class="skeleton sk-line w70"></div><div class="skeleton sk-line w30"></div></div></div>
+    </div>
+    <div class="center mt-2 foot-more">
+      <a href="catalog.html"><button class="btn-outline" type="button">View All Products</button></a>
+    </div>
+  </div>
+</section>
+
+<!-- MEMBERSHIP TIERS -->
+<section class="section-band alt">
+  <div class="section" style="padding-top:0;padding-bottom:0;">
+    <p class="section-title">Membership</p>
+    <div class="section-head">
+      <h2 class="section-heading">3-Tier Loyalty Program</h2>
+      <a href="membership.html" class="btn-ghost">Compare all tiers <svg class="picon arrow" aria-hidden="true"><use href="img/icons.svg#i-arrow-right"/></svg></a>
+    </div>
+    <div class="tiers">
+      <div class="tier-card" data-tier-card="Spoke">
+        <p class="tier-label">Entry Level</p><h3>Spoke</h3>
+        <p class="tier-sub">For riders just getting started.</p>
+        <div class="price-tag">Free <span>forever</span></div>
+        <hr class="divider-line" />
+        <ul>
+          <li><span><span data-disc="Spoke">5</span>% off every reservation</span></li>
+          <li>Join community group rides</li>
+          <li>RSVP to charity events</li>
+          <li>Digital member ID for in-store pickup</li>
+        </ul>
+        <a href="auth.html" data-register class="tier-join"><button class="btn-tier" type="button">Join Free</button></a>
+      </div>
+      <div class="tier-card featured" data-tier-card="Chain">
+        <p class="tier-label">Most Popular</p><h3>Chain</h3>
+        <p class="tier-sub">For the regular weekend rider.</p>
+        <div class="price-tag">&#8369;499 <span>/ month, paid in-store</span></div>
+        <hr class="divider-line" />
+        <ul>
+          <li><span><span data-disc="Chain">10</span>% off every reservation</span></li>
+          <li>Priority event registration</li>
+          <li>1 free basic tune-up per year</li>
+          <li>Chain-member promotions</li>
+        </ul>
+        <a href="auth.html?tier=Chain" data-register class="tier-join"><button class="btn-tier" type="button">Join, then go Chain</button></a>
+      </div>
+      <div class="tier-card" data-tier-card="Peloton">
+        <p class="tier-label">Premium</p><h3>Peloton</h3>
+        <p class="tier-sub">For the serious cyclist.</p>
+        <div class="price-tag">&#8369;999 <span>/ month, paid in-store</span></div>
+        <hr class="divider-line" />
+        <ul>
+          <li><span><span data-disc="Peloton">20</span>% off every reservation</span></li>
+          <li>Early access to new bikes &amp; gear</li>
+          <li>Unlimited in-store flat tire fixes</li>
+          <li>Private member rides &amp; events</li>
+          <li>Priority support</li>
+        </ul>
+        <a href="auth.html?tier=Peloton" data-register class="tier-join"><button class="btn-tier" type="button">Join, then go Peloton</button></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CHARITY TRACKER -->
+<section class="section-band">
+  <div class="section" style="padding-top:0;padding-bottom:0;">
+    <p class="section-title">Community Impact</p>
+    <div class="split-2-center">
+      <div>
+        <h2 class="section-heading" style="margin-bottom:1rem;">Charity Fundraising Tracker</h2>
+        <p class="text-ink-2" style="font-size:0.88rem;line-height:1.8;margin-bottom:2rem;">Every purchase contributes to our partnered local cycling advocacies. Together we&rsquo;re raising &#8369;150,000 for three local cycling non-profits.</p>
+        <a href="events.html"><button class="btn-outline" type="button">View Charity Events</button></a>
+      </div>
+      <div>
+        <div style="margin-bottom:1.5rem;">
+          <div class="flex-between" style="font-size:0.82rem;margin-bottom:0.4rem;">
+            <span style="font-weight:600;">Bikes for Kids PH</span>
+            <span class="num text-ink-2">&#8369;38,200 / &#8369;50,000</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:76%;"></div></div>
+          <div class="num" style="font-size:0.7rem;color:var(--ink-3);text-align:right;margin-top:0.2rem;">76%</div>
+        </div>
+        <div style="margin-bottom:1.5rem;">
+          <div class="flex-between" style="font-size:0.82rem;margin-bottom:0.4rem;">
+            <span style="font-weight:600;">Green Lanes Advocacy</span>
+            <span class="num text-ink-2">&#8369;21,500 / &#8369;50,000</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:43%;"></div></div>
+          <div class="num" style="font-size:0.7rem;color:var(--ink-3);text-align:right;margin-top:0.2rem;">43%</div>
+        </div>
+        <div style="margin-bottom:1.5rem;">
+          <div class="flex-between" style="font-size:0.82rem;margin-bottom:0.4rem;">
+            <span style="font-weight:600;">Safe Roads Coalition</span>
+            <span class="num text-ink-2">&#8369;12,800 / &#8369;50,000</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:26%;"></div></div>
+          <div class="num" style="font-size:0.7rem;color:var(--ink-3);text-align:right;margin-top:0.2rem;">26%</div>
+        </div>
+        <div class="flex-between" style="margin-top:1.5rem;padding-top:1.2rem;border-top:1px solid var(--line);font-size:0.82rem;">
+          <span class="text-ink-2">Total raised</span>
+          <span class="num" style="font-weight:700;">&#8369;72,500 <span class="text-ink-2" style="font-weight:400;">of &#8369;150,000</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="footer-grid">
+    <div class="footer-col">
+      <h4>PelotonHub</h4>
+      <p>A web-based platform for the local cycling community &mdash; combining retail, membership, and social impact into one digital ecosystem.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Shop</h4>
+      <ul>
+        <li><a href="catalog.html?cat=Built+Bikes">Built Bikes</a></li>
+        <li><a href="catalog.html?cat=Bike+Parts+%26+Accessories">Parts &amp; Accessories</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Community</h4>
+      <ul>
+        <li><a href="events.html">Group Rides</a></li>
+        <li><a href="events.html">Charity Events</a></li>
+        <li><a href="membership.html">Membership Tiers</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Account</h4>
+      <ul>
+        <li><a href="auth.html">Sign In / Register</a></li>
+        <li><a href="profile.html">My Profile</a></li>
+        <li><a href="orders.html">Order History</a></li>
+        <li><a href="support.html">Support</a></li>
+        <li><a href="terms.html">Terms &amp; Privacy</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">&copy; 2026 PelotonHub. All rights reserved.</div>
+</footer>
+
+<script type="module">
+import { esc, peso, getUser, productCard } from './js/main.js';
+import { apiCatalog } from './js/firebase.js';
+
+function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1):'';}
+
+// New arrivals: 3 newest products tagged "new"
+apiCatalog({tag:'new',sort:'newest',per_page:4}).then(d=>{
+  if(!d.ok) return;
+  document.getElementById('new-arrivals').innerHTML=d.products.map(productCard).join('');
+});
+
+</script>
+</body>
+</html>

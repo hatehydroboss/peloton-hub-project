@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PelotonHub Admin — Stock Management</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%230b0b0a' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%230b0b0a'/%3E%3Cline x1='16' y1='16' x2='16' y2='3' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='26' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3Cline x1='16' y1='16' x2='6' y2='22' stroke='%230b0b0a' stroke-width='2'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/styles.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+  <style>
+    /* ── Summary cards ── */
+    .stock-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .stock-summary-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.2rem;
+      background: var(--white);
+      cursor: pointer;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .stock-summary-card:hover,
+    .stock-summary-card.active { border-color: var(--black); box-shadow: 0 0 0 2px var(--black); }
+    .stock-summary-card.danger  { border-left: 4px solid #dc2626; }
+    .stock-summary-card.warning { border-left: 4px solid #f59e0b; }
+    .stock-summary-card.ok      { border-left: 4px solid #16a34a; }
+    .stock-summary-card .s-val  { font-size: 1.8rem; font-family: var(--font-mono); font-weight: 700; line-height: 1; margin-bottom: .3rem; }
+    .stock-summary-card .s-lbl  { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); font-weight: 600; }
+
+    /* ── Inline qty input ── */
+    .qty-cell { display: flex; align-items: center; gap: .4rem; }
+    .qty-input {
+      width: 72px;
+      padding: .3rem .5rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      font-family: var(--font-mono);
+      font-size: .85rem;
+      text-align: center;
+    }
+    .qty-input:focus { outline: none; border-color: var(--black); }
+    .qty-input.changed { border-color: var(--accent); background: #fffde7; }
+
+    /* ── Availability toggle ── */
+    .avail-toggle {
+      appearance: none;
+      width: 38px; height: 20px;
+      background: #ccc;
+      border-radius: 10px;
+      position: relative;
+      cursor: pointer;
+      transition: background .2s;
+      flex-shrink: 0;
+    }
+    .avail-toggle::after {
+      content: '';
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 14px; height: 14px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform .2s;
+    }
+    .avail-toggle:checked               { background: #16a34a; }
+    .avail-toggle:checked::after        { transform: translateX(18px); }
+    .avail-toggle-label { font-size: .78rem; color: var(--ink-2); }
+
+    /* ── Save indicator ── */
+    .row-saved  { animation: flashGreen .6s ease; }
+    @keyframes flashGreen {
+      0%   { background: #dcfce7; }
+      100% { background: transparent; }
+    }
+
+    /* ── Bulk save bar ── */
+    .bulk-bar {
+      position: sticky;
+      bottom: 0;
+      background: var(--black);
+      color: var(--white);
+      padding: .8rem 1.5rem;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      border-radius: var(--radius) var(--radius) 0 0;
+      z-index: 10;
+    }
+    .bulk-bar.show { display: flex; }
+    .bulk-bar p  { font-size: .85rem; margin: 0; }
+    .bulk-bar strong { color: var(--accent); }
+  </style>
+</head>
+<body class="admin-body">
+<button class="admin-sidebar-toggle" id="admin-sidebar-toggle" aria-label="Toggle menu">&#9776;</button>
+<div class="admin-shell">
+<aside class="admin-sidebar" id="admin-sidebar">
+  <div class="admin-sidebar-brand">
+    <span>Peloton<span class="dot">Hub</span></span><span class="tag-admin">Admin</span>
+  </div>
+  <ul class="admin-nav">
+    <li class="admin-nav-label">Overview</li>
+    <li><a href="index.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-sliders"/></svg></span> Dashboard</a></li>
+    <li class="admin-nav-label">Catalog</li>
+    <li><a href="products.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-bike"/></svg></span> Products</a></li>
+    <li><a href="stock.html" class="active"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-clipboard"/></svg></span> Stock Management</a></li>
+    <li><a href="orders.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-receipt"/></svg></span> Orders</a></li>
+    <li class="admin-nav-label">Community</li>
+    <li><a href="customers.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-user"/></svg></span> Customers</a></li>
+    <li><a href="events.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-calendar"/></svg></span> Events &amp; RSVPs</a></li>
+    <li><a href="membership.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-trophy"/></svg></span> Membership Tiers</a></li>
+    <li class="admin-nav-label">Support</li>
+    <li><a href="messages.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-bulb"/></svg></span> Messages</a></li>
+  </ul>
+  <div class="admin-sidebar-foot">
+    <div class="admin-avatar" id="admin-initials">SA</div>
+    <div class="who">
+      <div class="name" id="admin-name">Shop Admin</div>
+      <div class="role">Administrator</div>
+    </div>
+    <button class="admin-logout-btn" id="admin-logout-btn" type="button" aria-label="Log out" title="Log out">&#10148;</button>
+  </div>
+</aside>
+
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <div>
+        <h1>Stock Management</h1>
+        <p class="sub">Update quantity and availability for every product</p>
+      </div>
+      <div class="admin-topbar-right">
+        <a href="products.html" class="btn-nav" style="background:var(--black);">Manage Products &rarr;</a>
+      </div>
+    </header>
+
+    <main class="admin-content">
+
+      <!-- Summary cards -->
+      <div class="stock-summary">
+        <div class="stock-summary-card danger" data-level="out" onclick="filterLevel('out',this)">
+          <div class="s-val" id="count-out">—</div>
+          <div class="s-lbl">Out of Stock</div>
+        </div>
+        <div class="stock-summary-card warning" data-level="low" onclick="filterLevel('low',this)">
+          <div class="s-val" id="count-low">—</div>
+          <div class="s-lbl">Low Stock (≤5)</div>
+        </div>
+        <div class="stock-summary-card ok" data-level="ok" onclick="filterLevel('ok',this)">
+          <div class="s-val" id="count-ok">—</div>
+          <div class="s-lbl">In Stock</div>
+        </div>
+        <div class="stock-summary-card" data-level="" onclick="filterLevel('',this)">
+          <div class="s-val" id="count-total">—</div>
+          <div class="s-lbl">Total Products</div>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <div class="data-toolbar">
+          <div class="admin-search">
+            <span>&#128269;</span>
+            <input type="text" id="s-search" placeholder="Search product or brand&hellip;" />
+          </div>
+          <button class="btn-outline btn-sm" id="mark-all-instock" type="button">Mark All In Stock</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Category</th>
+                <th style="width:110px;">Qty Left</th>
+                <th style="width:130px;">Available</th>
+                <th style="width:90px;">Status</th>
+                <th style="width:80px;"></th>
+              </tr>
+            </thead>
+            <tbody id="stock-tbody">
+              <tr><td colspan="6" style="color:var(--ink-3)">Loading&hellip;</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Bulk save sticky bar -->
+        <div class="bulk-bar" id="bulk-bar">
+          <p><strong id="changed-count">0</strong> unsaved change(s)</p>
+          <div style="display:flex;gap:.6rem;">
+            <button class="btn-outline btn-sm" style="color:#fff;border-color:rgba(255,255,255,.3);" id="bulk-discard" type="button">Discard</button>
+            <button class="btn-primary btn-sm" id="bulk-save" type="button">Save All Changes</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div><!-- .admin-shell -->
+
+<div id="ph-toast" aria-live="polite"></div>
+
+<script>
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function toast(m,ok=true){const t=document.getElementById('ph-toast');t.textContent=m;t.style.background=ok?'':'#dc2626';t.classList.add('show');setTimeout(()=>{t.classList.remove('show');t.style.background='';},3000);}
+function qs(s){return document.querySelector(s);}
+
+let ALL_PRODUCTS = [];
+let CHANGES      = {}; // { id: { stock_qty, in_stock } }
+let activeLevel  = '';
+
+// ── Load ──────────────────────────────────────
+function load(level='', q=''){
+  const params = new URLSearchParams();
+  if(level) params.set('level', level);
+  if(q)     params.set('q', q);
+
+  FB.apiAdminStockGet(Object.fromEntries(params))
+    .then(d => {
+      if(!d.ok) return;
+      ALL_PRODUCTS = d.products;
+
+      // Update summary counts
+      qs('#count-out').textContent   = d.counts.out_of_stock ?? 0;
+      qs('#count-low').textContent   = d.counts.low_stock    ?? 0;
+      qs('#count-ok').textContent    = d.counts.in_stock     ?? 0;
+      qs('#count-total').textContent = d.counts.total        ?? 0;
+
+      render();
+    });
+}
+
+// ── Render table ─────────────────────────────
+function render(){
+  const tbody = qs('#stock-tbody');
+
+  if(!ALL_PRODUCTS.length){
+    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--ink-3)">No products found.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = ALL_PRODUCTS.map(p => {
+    const change  = CHANGES[p.id] || {};
+    const inStock = change.hasOwnProperty('in_stock') ? change.in_stock : p.in_stock;
+    const qty     = change.hasOwnProperty('stock_qty') ? change.stock_qty : p.stock_qty;
+    const isDirty = !!CHANGES[p.id];
+
+    // Stock status pill
+    let pill = '';
+    if(!inStock)       pill = '<span class="stock-pill out">Out of Stock</span>';
+    else if(qty===null||qty===undefined) pill = '<span class="stock-pill untracked">Untracked</span>';
+    else if(qty === 0) pill = '<span class="stock-pill out">Out of Stock</span>';
+    else if(qty <= 5)  pill = `<span class="stock-pill low">${qty} left — Low</span>`;
+    else               pill = `<span class="stock-pill in">${qty} in stock</span>`;
+
+    const thumb = p.image
+      ? `<img class="cell-thumb" src="${esc(/^(data:|https?:)/.test(p.image)?p.image:'../'+p.image)}" alt="" onerror="this.style.display='none'" />`
+      : `<div class="cell-thumb" style="font-size:1.3rem;display:flex;align-items:center;justify-content:center;">${esc(p.icon||'🚲')}</div>`;
+
+    return `<tr id="row-${esc(p.id)}" ${isDirty ? 'style="background:#fffde7;"' : ''}>
+      <td>
+        <div class="cell-product">
+          ${thumb}
+          <div class="meta">
+            <div class="p-name">${esc(p.name)}</div>
+            <div class="p-sub">${esc(p.brand||'')}</div>
+          </div>
+        </div>
+      </td>
+      <td>
+        <div class="p-name" style="font-size:.8rem;">${esc(p.sub_category||p.category||'')}</div>
+      </td>
+      <td>
+        <div class="qty-cell">
+          <input
+            class="qty-input ${isDirty && change.hasOwnProperty('stock_qty') ? 'changed' : ''}"
+            type="number" min="0" placeholder="—"
+            value="${qty !== null && qty !== undefined ? qty : ''}"
+            data-id="${esc(p.id)}"
+            data-orig="${p.stock_qty !== null ? p.stock_qty : ''}"
+            onchange="onQtyChange(this)"
+            oninput="onQtyChange(this)"
+          />
+        </div>
+      </td>
+      <td>
+        <div style="display:flex;align-items:center;gap:.5rem;">
+          <input
+            type="checkbox"
+            class="avail-toggle"
+            data-id="${esc(p.id)}"
+            ${inStock ? 'checked' : ''}
+            onchange="onAvailChange(this)"
+            title="Toggle availability"
+          />
+          <span class="avail-toggle-label">${inStock ? 'Available' : 'Unavailable'}</span>
+        </div>
+      </td>
+      <td>${pill}</td>
+      <td>
+        <button class="btn-primary btn-sm" onclick="saveOne('${esc(p.id)}')"
+                style="padding:.3rem .7rem;font-size:.72rem;">Save</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Change tracking ───────────────────────────
+function markChanged(id, field, value){
+  if(!CHANGES[id]) CHANGES[id] = {};
+  CHANGES[id][field] = value;
+  updateBulkBar();
+  // Highlight row
+  const row = document.getElementById('row-' + id);
+  if(row) row.style.background = '#fffde7';
+}
+
+function updateBulkBar(){
+  const count = Object.keys(CHANGES).length;
+  const bar   = qs('#bulk-bar');
+  qs('#changed-count').textContent = count;
+  count > 0 ? bar.classList.add('show') : bar.classList.remove('show');
+}
+
+// Quantity this row will be saved with (pending edit, else what's stored)
+function pendingQty(id){
+  const ch = CHANGES[id];
+  if(ch && ch.hasOwnProperty('stock_qty')) return ch.stock_qty;
+  const p = ALL_PRODUCTS.find(x => x.id === id);
+  return p ? p.stock_qty : null;
+}
+
+function setAvailBox(id, on){
+  const cb = document.querySelector(`.avail-toggle[data-id="${id}"]`);
+  if(!cb) return;
+  cb.checked = on;
+  if(cb.nextElementSibling) cb.nextElementSibling.textContent = on ? 'Available' : 'Unavailable';
+}
+
+function onQtyChange(input){
+  const id    = input.dataset.id;
+  const value = input.value.trim() === '' ? null : parseInt(input.value, 10);
+  input.classList.add('changed');
+  markChanged(id, 'stock_qty', value);
+  // 0 on hand can't be sold; restocking an unavailable product makes it available
+  const p = ALL_PRODUCTS.find(x => x.id === id);
+  if(value === 0){ markChanged(id, 'in_stock', 0); setAvailBox(id, false); }
+  else if(value > 0 && p && !p.in_stock && !(CHANGES[id] && CHANGES[id].in_stock === 0 && CHANGES[id]._manualOff)){
+    markChanged(id, 'in_stock', 1); setAvailBox(id, true);
+  }
+}
+
+function onAvailChange(cb){
+  const id = cb.dataset.id;
+  if(cb.checked && pendingQty(id) === 0){
+    setAvailBox(id, false);
+    toast('Enter a quantity above 0 first — a product with 0 in stock can’t be sold.', false);
+    return;
+  }
+  setAvailBox(id, cb.checked);
+  markChanged(id, 'in_stock', cb.checked ? 1 : 0);
+  if(!cb.checked) CHANGES[id]._manualOff = true; else if(CHANGES[id]) delete CHANGES[id]._manualOff;
+}
+
+// ── Save one row ──────────────────────────────
+function saveOne(id){
+  const change = CHANGES[id];
+  const p      = ALL_PRODUCTS.find(x => x.id === id);
+  if(!p) return;
+
+  const payload = {
+    action:   'update',
+    id,
+    in_stock:  change?.hasOwnProperty('in_stock')  ? change.in_stock  : p.in_stock,
+    stock_qty: change?.hasOwnProperty('stock_qty') ? change.stock_qty : p.stock_qty,
+  };
+
+  FB.apiAdminStockUpdate(payload)
+  .then(d => {
+    if(d.ok){
+      toast('Saved: ' + p.name);
+      delete CHANGES[id];
+      updateBulkBar();
+      // Flash green
+      const row = document.getElementById('row-' + id);
+      if(row){ row.style.background=''; row.classList.add('row-saved'); setTimeout(()=>row.classList.remove('row-saved'),700); }
+      // Update local data so pill refreshes
+      if(payload.hasOwnProperty('in_stock'))  p.in_stock  = payload.in_stock;
+      if(payload.hasOwnProperty('stock_qty')) p.stock_qty = payload.stock_qty;
+      render();
+      load(activeLevel, qs('#s-search').value.trim()); // refresh counts
+    } else {
+      toast(d.error || 'Save failed', false);
+    }
+  });
+}
+
+// ── Bulk save ─────────────────────────────────
+qs('#bulk-save').addEventListener('click', () => {
+  const items = Object.entries(CHANGES).map(([id, ch]) => {
+    const p = ALL_PRODUCTS.find(x => x.id === id) || {};
+    return {
+      id,
+      in_stock:  ch.hasOwnProperty('in_stock')  ? ch.in_stock  : p.in_stock,
+      stock_qty: ch.hasOwnProperty('stock_qty') ? ch.stock_qty : p.stock_qty,
+    };
+  });
+
+  if(!items.length) return;
+
+  FB.apiAdminStockBulk({ items })
+  .then(d => {
+    if(d.ok){
+      toast(`✓ ${d.updated} product(s) updated`);
+      CHANGES = {};
+      updateBulkBar();
+      load(activeLevel, qs('#s-search').value.trim());
+    } else {
+      toast(d.error || 'Bulk save failed', false);
+    }
+  });
+});
+
+// ── Discard changes ───────────────────────────
+qs('#bulk-discard').addEventListener('click', () => {
+  CHANGES = {};
+  updateBulkBar();
+  render();
+});
+
+// ── Filter by level (summary card click) ──────
+window.filterLevel = function(level, card){
+  activeLevel = level;
+  document.querySelectorAll('.stock-summary-card').forEach(c => c.classList.remove('active'));
+  if(card) card.classList.add('active');
+  load(level, qs('#s-search').value.trim());
+};
+
+// ── Search ────────────────────────────────────
+let searchTimer;
+qs('#s-search').addEventListener('input', e => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => load(activeLevel, e.target.value.trim()), 300);
+});
+
+// ── Mark all in stock ─────────────────────────
+qs('#mark-all-instock').addEventListener('click', () => {
+  if(!confirm('Mark all currently listed products as Available?')) return;
+  let skipped = 0;
+  ALL_PRODUCTS.forEach(p => {
+    if(pendingQty(p.id) === 0){ skipped++; return; }   // nothing on hand to sell
+    markChanged(p.id, 'in_stock', 1);
+  });
+  render();
+  if(skipped) toast(`${skipped} product(s) with 0 in stock were skipped — enter a quantity first.`, false);
+});
+
+// ── Sidebar toggle ────────────────────────────
+document.addEventListener('admin-ready', () => {
+  const toggle  = document.getElementById('admin-sidebar-toggle');
+  const sidebar = document.getElementById('admin-sidebar');
+  if(toggle && sidebar) toggle.addEventListener('click', () => sidebar.classList.toggle('open'));
+  load();
+});
+</script>
+<script type="module" src="js/admin-common.js"></script>
+</body>
+</html>
