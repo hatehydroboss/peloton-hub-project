@@ -5,12 +5,10 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**",
-      "PICTURES/**",
+      "release/**",
       "README.md",
-      "README.txt",
       "js/firebase-seed.js",
-      "js/firebase-stock-seed.js",
-      "img/products/_originals/**"
+      "js/firebase-stock-seed.js"
     ],
     "headers": [
       {

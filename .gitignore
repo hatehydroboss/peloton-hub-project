@@ -1,0 +1,7 @@
+node_modules/
+.firebase/
+*.log
+*.zip
+Thumbs.db
+desktop.ini
+.DS_Store
