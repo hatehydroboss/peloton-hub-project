@@ -77,6 +77,9 @@ The site goes live at **https://peletonhub.web.app**. That domain is already all
 Firebase sign-in.
 
 ### 2. Make the APK
+A ready-built debug APK is included at `release/PelotonHub-debug.apk` — copy it to an Android phone and install it.
+To build a new one:
+
 1. Open <https://www.pwabuilder.com>, enter `https://peletonhub.web.app/index.html`, click **Start**.
 2. Choose **Package for stores → Android → Generate**, then download the zip.
 3. Copy the `.apk` from the zip to the phone and install it (allow "install unknown apps").
