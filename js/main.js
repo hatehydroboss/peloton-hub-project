@@ -11,7 +11,7 @@ import {
   auth,
   onAuthStateChanged,
 } from './firebase.js';
-import { apiCartGet, apiLogout, apiMe, apiLogin, apiSettingsGet } from './firebase.js';
+import { apiCartGet, apiLogout, apiMe, apiLogin, apiSettingsGet, apiSocialLogin } from './firebase.js';
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 // Loading screen (page-loader.js): a script that fills the page takes a hold and calls the
@@ -98,14 +98,17 @@ function injectTabbar() {
 }
 
 // ── BACK BUTTON (top-left, every page except Home) ──
+// Only in the Android app: on the website (PC or phone browser) the browser
+// already has its own Back button.
 // Goes back in history when the previous page is ours; otherwise (app just
 // opened on this page, or came from sign-in) goes to the page's parent.
 const BACK_FALLBACK = { 'product.html': 'catalog.html', 'orders.html': 'profile.html' };
 const NO_BACK       = ['home.html', 'index.html', ''];
+const isApp = () => !!window.Capacitor?.isNativePlatform?.();
 function injectBackButton() {
   const nav  = qs('.navbar');
   const page = location.pathname.split('/').pop() || 'index.html';
-  if (!nav || NO_BACK.includes(page) || qs('.nav-back')) return;
+  if (!isApp() || !nav || NO_BACK.includes(page) || qs('.nav-back')) return;
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'nav-back';
@@ -369,6 +372,50 @@ function productCard(p) {
     </a>`;
 }
 
+// ── GOOGLE / FACEBOOK SIGN-IN ───────────────────
+// Buttons with [data-social="google|facebook"] (sign-in window, register page).
+// Signs in — or creates the account on first use — then goes where a sign-in would.
+const SOCIAL_ICONS = {
+  google:   '<svg class="soc-ico" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>',
+  facebook: '<svg class="soc-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="#1877F2" d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.04V9.41c0-3.02 1.8-4.7 4.54-4.7 1.31 0 2.68.24 2.68.24v2.97h-1.51c-1.49 0-1.96.93-1.96 1.89v2.26h3.33l-.53 3.49h-2.8V24C19.62 23.1 24 18.1 24 12.07z"/></svg>',
+};
+function socialButtons() {
+  return `<div class="soc-btns">
+    <button type="button" class="btn-soc" data-social="google" aria-label="Continue with Google" title="Continue with Google">${SOCIAL_ICONS.google}<span class="sr-only">Continue with Google</span></button>
+    <button type="button" class="btn-soc" data-social="facebook" aria-label="Continue with Facebook" title="Continue with Facebook">${SOCIAL_ICONS.facebook}<span class="sr-only">Continue with Facebook</span></button>
+  </div>`;
+}
+function initSocialButtons() {
+  document.addEventListener('click', async e => {
+    const btn = e.target.closest('[data-social]');
+    if (!btn || btn.disabled) return;
+    e.preventDefault();
+    const group = btn.closest('.soc-btns');
+    const msg   = btn.closest('.si-dialog, .form-card')?.querySelector('.form-msg');
+    const label = btn.querySelector('span');
+    const text  = label.textContent;
+    qsa('[data-social]', group).forEach(b => b.disabled = true);
+    btn.classList.add('is-busy');
+    label.textContent = 'Connecting…';
+    const res = await apiSocialLogin(btn.dataset.social);
+    if (res.ok) {
+      label.textContent = res.is_new ? 'Account created!' : 'Welcome!';
+      window.phLoaderShow?.();
+      const next = safeNext();
+      setTimeout(() => {
+        if (next) location.href = next;
+        else if (onPage('index.html', 'auth.html')) location.href = 'home.html';
+        else location.reload();
+      }, 300);
+      return;
+    }
+    qsa('[data-social]', group).forEach(b => b.disabled = false);
+    btn.classList.remove('is-busy');
+    label.textContent = text;
+    if (!res.cancelled) showMsg(msg, 'error', res.error || 'Sign-in failed');
+  });
+}
+
 // ── SIGN-IN MODAL ───────────────────────────────
 // Every "Sign In" link/button opens this window instead of a separate page.
 // "Create an account" goes to auth.html (register); its "Sign in" link
@@ -402,6 +449,8 @@ function openSignIn() {
           <p class="form-msg" id="si-m-msg" aria-live="polite"></p>
           <button class="btn-full" type="submit" id="si-m-submit">Sign In</button>
         </form>
+        <div class="si-or"><span>or</span></div>
+        ${socialButtons()}
         <div class="si-or"><span>New to PelotonHub?</span></div>
         <a href="auth.html" data-register class="btn-outline si-create">Create an account</a>
         ${onPage('index.html') ? '<a href="home.html?guest=1" class="si-guest">Continue as guest</a>' : ''}
@@ -609,6 +658,7 @@ function init() {
   injectBackButton();
   initPullToRefresh();
   initSignInLinks();         // before page transitions so sign-in links aren't followed
+  initSocialButtons();
   initReveal();
   initPageTransitions();
   registerServiceWorker();
@@ -628,4 +678,4 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 else init();
 
 // ── EXPORTS (used by page-specific inline scripts) ──
-export { holdLoader, icon, qs, qsa, esc, peso, Toast, showMsg, refreshCartBadge, getUser, apiLogout, flyToCart, confetti, skeletonCards, productCard, openSignIn };
+export { socialButtons, holdLoader, icon, qs, qsa, esc, peso, Toast, showMsg, refreshCartBadge, getUser, apiLogout, flyToCart, confetti, skeletonCards, productCard, openSignIn };
