@@ -10,8 +10,6 @@
 
 // ── ADMIN AUTH ───────────────────────────────────────────────
 const AdminAuth = {
-  DEMO_EMAIL: 'admin@pelotonhub.ph',
-  DEMO_PASS: 'admin123',
   get() { try { return JSON.parse(localStorage.getItem('ph_admin_user') || 'null'); } catch { return null; } },
   isLoggedIn() { return !!AdminAuth.get(); },
   login(email) { localStorage.setItem('ph_admin_user', JSON.stringify({ email, name: 'Shop Admin', initials: 'SA' })); },
