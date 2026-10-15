@@ -538,3 +538,17 @@ a:hover > .picon.arrow, button:hover > .picon.arrow { transform: translateX(3px)
   .ev-foot .btn-sm { flex: 1 1 100%; min-height: 44px; }
   .ev-mine { padding: .9rem 1rem; gap: .75rem; }
 }
+
+/* ═════════════ Google / Facebook sign-in buttons (icon only) ═════════════ */
+.soc-btns { display: flex; justify-content: center; gap: 1rem; }
+.btn-soc {
+  display: grid; place-items: center; width: 54px; height: 54px; padding: 0; border-radius: 50%;
+  border: 1.5px solid var(--line-strong); background: var(--white); cursor: pointer;
+  transition: border-color .15s, background .15s, transform .15s, box-shadow .15s;
+}
+.btn-soc:hover { border-color: var(--ink-1); box-shadow: var(--shadow-sm); }
+.btn-soc:active { transform: scale(.92); }
+.btn-soc:disabled { opacity: .5; cursor: default; transform: none; }
+.btn-soc.is-busy { opacity: 1; animation: soc-pulse 1s ease-in-out infinite; }
+@keyframes soc-pulse { 50% { transform: scale(.9); } }
+.btn-soc .soc-ico { width: 24px; height: 24px; }

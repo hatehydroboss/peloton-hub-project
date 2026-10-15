@@ -23,6 +23,10 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
+  GoogleAuthProvider,
+  FacebookAuthProvider,
+  signInWithPopup,
+  signInWithCredential,
 }                                             from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
   getFirestore,
@@ -210,12 +214,94 @@ export async function apiLogin({ email, password }) {
 }
 
 /**
+ * Sign in (or sign up) with Google or Facebook.
+ * Website: the provider's pop-up window.
+ * APK: Google and Facebook block sign-in inside app web views, so the native
+ * FirebaseAuthentication plugin (@capacitor-firebase/authentication) shows the
+ * phone's own account picker and hands back a token we sign in with here.
+ * First sign-in creates the shop profile (users/{uid}) the same way apiRegister does.
+ * Returns: { ok, user, is_new } — or { ok:false, cancelled:true } if the person backed out.
+ */
+function nativeAuthPlugin() {
+  const cap = window.Capacitor;
+  if (!cap || !cap.isNativePlatform || !cap.isNativePlatform()) return null;
+  return cap.Plugins?.FirebaseAuthentication || cap.registerPlugin?.('FirebaseAuthentication') || null;
+}
+
+export async function apiSocialLogin(providerName) {
+  const isGoogle = providerName === 'google';
+  try {
+    let cred;
+    const native = nativeAuthPlugin();
+    if (native) {
+      if (isGoogle) {
+        const r = await native.signInWithGoogle();
+        cred = await signInWithCredential(auth, GoogleAuthProvider.credential(r.credential?.idToken, r.credential?.accessToken));
+      } else {
+        const r = await native.signInWithFacebook();
+        cred = await signInWithCredential(auth, FacebookAuthProvider.credential(r.credential?.accessToken));
+      }
+    } else {
+      const provider = isGoogle ? new GoogleAuthProvider() : new FacebookAuthProvider();
+      if (isGoogle) provider.setCustomParameters({ prompt: 'select_account' });
+      else provider.addScope('email');
+      cred = await signInWithPopup(auth, provider);
+    }
+
+    const fu   = cred.user;
+    const ref  = doc(db, 'users', fu.uid);
+    const snap = await getDoc(ref);
+    if (snap.exists()) {
+      const data = snap.data();
+      if (data.status === 'suspended') {
+        await signOut(auth);
+        return { ok: false, error: 'This account has been suspended' };
+      }
+      return { ok: true, is_new: false, user: { id: fu.uid, ...data } };
+    }
+
+    // First time: make the shop profile from the Google/Facebook account
+    const parts = (fu.displayName || '').trim().split(/\s+/).filter(Boolean);
+    const first_name = parts.length ? parts.slice(0, -1).join(' ') || parts[0] : (fu.email || 'Rider').split('@')[0];
+    const last_name  = parts.length > 1 ? parts[parts.length - 1] : '';
+    const userData = {
+      first_name,
+      last_name,
+      name:       [first_name, last_name].filter(Boolean).join(' '),
+      email:      (fu.email || '').toLowerCase(),
+      mobile:     fu.phoneNumber || '',
+      tier:       'Spoke',
+      points:     0,
+      status:     'active',
+      provider:   isGoogle ? 'google' : 'facebook',
+      created_at: serverTimestamp(),
+    };
+    await setDoc(ref, userData);
+    return { ok: true, is_new: true, user: { id: fu.uid, ...userData, created_at: localISO(new Date()) } };
+  } catch (e) {
+    const code = e.code || '';
+    const msg  = String(e.message || e);
+    if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request' || /cancel/i.test(msg))
+      return { ok: false, cancelled: true };
+    if (code === 'auth/popup-blocked')
+      return { ok: false, error: 'Your browser blocked the sign-in window. Allow pop-ups for this site and try again.' };
+    if (code === 'auth/account-exists-with-different-credential')
+      return { ok: false, error: 'That email already has a PelotonHub account. Sign in with your email and password instead.' };
+    if (code === 'auth/operation-not-allowed')
+      return { ok: false, error: (isGoogle ? 'Google' : 'Facebook') + ' sign-in isn’t turned on yet.' };
+    return { ok: false, error: msg };
+  }
+}
+
+/**
  * Sign out the current customer.
  * Mirrors: POST /api/logout.php
  * Returns: { ok }
  */
 export async function apiLogout() {
   try {
+    // APK: also forget the phone's Google/Facebook choice, so the next sign-in can pick another account
+    try { await nativeAuthPlugin()?.signOut(); } catch {}
     await signOut(auth);
     return { ok: true };
   } catch (e) {
