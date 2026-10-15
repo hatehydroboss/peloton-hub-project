@@ -101,13 +101,14 @@ the new version the next time it is opened.
 ## Default Credentials
 
 ### Admin Console
-| Field | Value |
-|-------|-------|
-| Email | `admin@pelotonhub.ph` |
-| Password | `admin123` |
+The seed script creates a starter admin account with a temporary password
+(see `js/firebase-seed.js`). **Replace it right after seeding**: create your own
+admin user in Firebase Console → Authentication → Users, add a document with its
+UID to the `admins` collection, then delete the starter account.
 
 An account is treated as an admin when a document with its Firebase Auth UID
-exists in the `admins` collection. The seed script creates both.
+exists in the `admins` collection. The admin console is at `admin/login.html`
+and is intentionally not linked from the storefront.
 
 ### Customer Accounts
 Register a new account via **Create Account** on the storefront.
