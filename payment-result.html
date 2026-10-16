@@ -57,7 +57,7 @@ const q = new URLSearchParams(location.search);
 const id = q.get('payment');
 const cancelled = q.get('cancelled') === '1';
 const $ = s => document.getElementById(s);
-const METHOD = { gcash: 'GCash', paymaya: 'Maya', card: 'Card', grab_pay: 'GrabPay', paymongo: 'PayMongo', cash: 'Cash' };
+const METHOD = { gcash: 'GCash', paymaya: 'Maya', card: 'Card', grab_pay: 'GrabPay', qrph: 'QRPh', paymongo: 'PayMongo', cash: 'Cash' };
 
 function actions(html) { $('pr-actions').innerHTML = html; }
 function show(p) {

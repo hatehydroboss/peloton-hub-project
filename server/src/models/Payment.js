@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const PAYMENT_METHODS = ['cash', 'card', 'gcash', 'paymaya', 'grab_pay', 'bank_transfer', 'pay_at_pickup', 'online', 'paymongo'];
+const PAYMENT_METHODS = ['cash', 'card', 'gcash', 'paymaya', 'grab_pay', 'qrph', 'bank_transfer', 'pay_at_pickup', 'online', 'paymongo'];
 const PAYMENT_STATUSES = ['pending', 'authorized', 'paid', 'failed', 'refunded', 'cancelled'];
 
 const paymentSchema = new mongoose.Schema(
