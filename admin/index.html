@@ -49,6 +49,7 @@
       <div>
         <h1>Dashboard</h1>
         <p class="sub">Here&rsquo;s what&rsquo;s happening at the shop today.</p>
+        <p class="sub" id="dash-filter-note" style="font-size:0.75rem;margin-top:0.2rem;"></p>
       </div>
       <div class="admin-topbar-right">
         <a href="../home.html" class="btn-nav" style="background:var(--black);" target="_blank" rel="noopener">View Storefront</a>
@@ -130,9 +131,16 @@ document.addEventListener('admin-ready', () => {
     });
   }
 
-  FB.apiAdminDashboard()
+  // Same filter as Orders: count only orders with a paid or pending payment (no old test orders or failed attempts)
+  window.PAY.apiAdminPayments({limit:500})
+    .then(p=>{
+      const ids = p.ok ? [...new Set(p.payments.filter(x=>x.type==='order'&&x.status!=='failed').map(x=>x.orderId))] : null;
+      return FB.apiAdminDashboard({ onlyOrderIds: ids });
+    })
     .then(d=>{
       if(!d.ok) return;
+      const note=document.getElementById('dash-filter-note');
+      if(note) note.textContent = d.hidden ? `Counting orders with a payment only (${d.hidden} test or failed order${d.hidden===1?'':'s'} left out).` : '';
       document.getElementById('stat-revenue').textContent  = peso(d.revenue);
       document.getElementById('stat-pending').textContent  = d.pending;
       document.getElementById('stat-members').textContent  = d.active_members;
@@ -183,6 +191,7 @@ document.addEventListener('admin-ready', () => {
     .catch(()=>{ document.getElementById('recent-orders-tbody').innerHTML='<tr><td colspan="5" style="color:var(--ink-3)">Could not load data.</td></tr>'; });
 });
 </script>
+<script type="module">import * as PAY from '../js/mongo-payment.js'; window.PAY = PAY;</script>
 <script type="module" src="js/admin-common.js"></script>
 </body>
 </html>
