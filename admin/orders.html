@@ -105,7 +105,7 @@ function qs(s){return document.querySelector(s);}
 
 let ALL_ORDERS=[];
 let PAYMAP={};   // orderId → latest payment from the payment server (MongoDB)
-const METHOD={gcash:'GCash',paymaya:'Maya',card:'Card',grab_pay:'GrabPay',paymongo:'Online (PayMongo)',cash:'Cash',pay_at_pickup:'Cash',online:'Online'};
+const METHOD={gcash:'GCash',paymaya:'Maya',card:'Card',grab_pay:'GrabPay',qrph:'QRPh',paymongo:'Online (PayMongo)',cash:'Cash',pay_at_pickup:'Cash',online:'Online'};
 function payText(o){
   const p=PAYMAP[o.id];
   if(!p) return esc(o.payment_method==='paymongo'?'Online (PayMongo)':'Cash')+' <span style="font-size:0.72rem;color:var(--ink-3);">(no record)</span>';

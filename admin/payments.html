@@ -69,7 +69,7 @@ function peso(n){return '\u20B1'+Math.round(n).toLocaleString('en-PH');}
 function cap(s){return s?s.split('_').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '):'';}
 function toast(m){const t=document.getElementById('ph-toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
 let ALL_PAYMENTS=[];
-const METHOD={gcash:'GCash',paymaya:'Maya',card:'Card',grab_pay:'GrabPay',paymongo:'Online (PayMongo)',cash:'Cash',pay_at_pickup:'Cash',online:'Online'};
+const METHOD={gcash:'GCash',paymaya:'Maya',card:'Card',grab_pay:'GrabPay',qrph:'QRPh',paymongo:'Online (PayMongo)',cash:'Cash',pay_at_pickup:'Cash',online:'Online'};
 async function load(){
   const status=document.getElementById('p-filter-status').value;
   const d = await window.PAY.apiAdminPayments({ status, limit: 500 });

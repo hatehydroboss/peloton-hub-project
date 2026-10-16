@@ -129,7 +129,7 @@ async function markPaidFromSession(payment) {
   if (s.paid) {
     payment.status = 'paid';
     payment.paymongoPaymentId = s.paymongoPaymentId;
-    if (['gcash', 'paymaya', 'card', 'grab_pay'].includes(s.sourceType)) payment.method = s.sourceType;
+    if (['gcash', 'paymaya', 'card', 'grab_pay', 'qrph'].includes(s.sourceType)) payment.method = s.sourceType;
     await payment.save();
   }
   return payment;
