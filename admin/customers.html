@@ -18,6 +18,7 @@
   <ul class="admin-nav">
     <li class="admin-nav-label">Overview</li>
     <li><a href="index.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-sliders"/></svg></span> Dashboard</a></li>
+    <li><a href="payments.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-receipt"/></svg></span> Payments</a></li>
     <li class="admin-nav-label">Catalog</li>
     <li><a href="products.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-bike"/></svg></span> Products</a></li>
     <li><a href="stock.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-clipboard"/></svg></span> Stock Management</a></li>
@@ -119,8 +120,18 @@ window.setTier=function(id,tier,sel){
   sel.disabled=true;
   FB.apiAdminCustomerTier({id,tier}).then(d=>{
     sel.disabled=false;
-    if(d.ok){ toast('Tier changed to '+tier); const c=ALL_CUSTOMERS.find(x=>x.id===id); if(c) c.tier=tier; }
-    else { alert(d.error); loadCustomers(); }
+    if(d.ok){
+      toast('Tier changed to '+tier);
+      const c=ALL_CUSTOMERS.find(x=>x.id===id); if(c) c.tier=tier;
+      // Record the membership fee in Payments (billed in-store).
+      if (tier === 'Chain' || tier === 'Peloton') {
+        const create = window.apiPaymentCreate;
+        if (typeof create === 'function') {
+          create({ type: 'membership', tier, userId: id, method: 'cash' })
+            .then(r => { if (!r.ok) toast('Tier changed, but the payment record failed: ' + r.error); });
+        }
+      }
+    } else { alert(d.error); loadCustomers(); }
   });
 };
 
@@ -135,6 +146,10 @@ document.addEventListener('admin-ready',()=>{
   if(toggle&&sidebar) toggle.addEventListener('click',()=>sidebar.classList.toggle('open'));
   loadCustomers();
 });
+</script>
+<script type="module">
+import { apiPaymentCreate } from '../js/mongo-payment.js';
+window.apiPaymentCreate = apiPaymentCreate;
 </script>
 <script type="module" src="js/admin-common.js"></script>
 </body>

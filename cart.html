@@ -80,6 +80,10 @@
           </div>
         </div>
         <div class="form-group"><label for="pickup-notes">Special Instructions (optional)</label><textarea id="pickup-notes" rows="3" placeholder="e.g., Please install the tires before pickup&hellip;"></textarea></div>
+        <div class="form-group"><label>Payment Method</label><div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:0.3rem;"><label style="display:flex;align-items:center;gap:0.4rem;"><input type="radio" name="payment-method" value="cash" checked /> Cash on Pickup (Pay in Store)</label><label style="display:flex;align-items:center;gap:0.4rem;"><input type="radio" name="payment-method" value="online" /> Pay Online (GCash, Maya, Card)</label></div>
+           <div id="online-payment-fields" hidden style="margin-top:0.8rem;padding:0.8rem 1rem;border:1px solid var(--line);border-radius:var(--radius);font-size:0.8rem;color:var(--ink-2);line-height:1.6;">
+             After you confirm, you&rsquo;ll go to <strong>PayMongo</strong>&rsquo;s secure checkout to pay with GCash, Maya, GrabPay or a card, then come back here. Your card details never touch PelotonHub.
+           </div></div>
         <p class="form-msg" id="pickup-msg" aria-live="polite"></p>
         <button class="btn-primary" id="confirm-btn" type="button" style="padding:0.8rem 2rem;margin-top:.6rem;">Confirm Reservation <svg class="picon arrow" aria-hidden="true"><use href="img/icons.svg#i-arrow-right"/></svg></button>
         <button class="pickup-back" id="pickup-back-btn" type="button"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-arrow-left"/></svg> Back to cart</button>
@@ -89,7 +93,7 @@
       <div id="panel-3" class="checkout-panel panel" style="margin-top:2rem;text-align:center;padding:3rem 2rem;" hidden>
         <div class="ph-success-ico" aria-hidden="true">&#10003;</div>
         <h3 style="font-size:1.3rem;margin-bottom:0.5rem;">Reservation Confirmed</h3>
-        <p style="color:var(--ink-2);font-size:0.88rem;margin-bottom:1.8rem;line-height:1.7;">Show this Reservation ID at the shop counter to pay and pick up. We&rsquo;ll hold your items for 48 hours.</p>
+        <p id="confirm-note" style="color:var(--ink-2);font-size:0.88rem;margin-bottom:1.8rem;line-height:1.7;">Show this Reservation ID at the shop counter to pay and pick up. We&rsquo;ll hold your items for 48 hours.</p>
         <div style="border:1px solid var(--line);padding:1rem;margin:0 auto 1.8rem;display:inline-block;">
           <div style="font-size:0.68rem;color:var(--ink-3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.3rem;">Reservation ID</div>
           <div class="num" style="font-size:1.1rem;font-weight:700;letter-spacing:0.06em;" id="reservation-id">&mdash;</div>
@@ -161,6 +165,8 @@
 import { esc, peso, getUser, refreshCartBadge, confetti, icon, holdLoader } from './js/main.js';
 const ready = holdLoader();
 import { apiCartGet, apiCartUpdate, apiCartRemove, apiOrderPlace, apiPromo, apiSettingsGet } from './js/firebase.js';
+import { apiPaymentCreate, apiPaymongoCheckout, goToCheckout, wakePaymentServer } from './js/mongo-payment.js';
+wakePaymentServer();   // the free server sleeps when idle; wake it while the customer fills in the cart
 
 const user = await getUser();
 document.getElementById(user?'member-view':'guest-view').hidden=false;
@@ -281,20 +287,32 @@ document.getElementById('confirm-btn').addEventListener('click', async ()=>{
   const date  = pickupDate.value;
   const time  = document.getElementById('pickup-time').value;
   const notes = document.getElementById('pickup-notes').value;
+  const paymentMethod = document.querySelector('input[name="payment-method"]:checked')?.value || 'cash';
   if(btn.disabled) return;                       // a double-tap must not place two reservations
   if(!date) return showMsg(msg,'error','Please choose a pickup date.');
   if(date < pickupDate.min || date > pickupDate.max) return showMsg(msg,'error','Pick a date between today and 30 days from now.');
   btn.disabled = true; btn.classList.add('is-loading');
-  const data=await apiOrderPlace({pickup_date:date,pickup_time:time,pickup_notes:notes,promo_code:PROMO_CODE});
-  btn.disabled = false; btn.classList.remove('is-loading');
+  const data=await apiOrderPlace({pickup_date:date,pickup_time:time,pickup_notes:notes,promo_code:PROMO_CODE,payment_method:paymentMethod});
   if(data.ok){
-    document.getElementById('reservation-id').textContent='#'+data.order_id;
     CART=[];
     refreshCartBadge();
+    if(paymentMethod==='online'){
+      // Reservation is saved; now pay on PayMongo's page (it returns to payment-result.html)
+      const pay = await apiPaymongoCheckout({ type:'order', orderId:data.order_id });
+      if(pay.ok) return goToCheckout(pay.checkoutUrl);
+      document.getElementById('confirm-note').textContent =
+        `Your reservation is saved, but online payment couldn’t start (${pay.error}). You can pay in store at pickup, or pay online later from My Orders. We’ll hold your items for 48 hours.`;
+    } else {
+      document.getElementById('confirm-note').textContent =
+        "Show this Reservation ID at the shop counter to pay and pick up. We'll hold your items for 48 hours.";
+      apiPaymentCreate({ type:'order', orderId:data.order_id, method:'cash' });   // recorded as pending until paid in store
+    }
+    btn.disabled = false; btn.classList.remove('is-loading');
+    document.getElementById('reservation-id').textContent='#'+data.order_id;
     history.replaceState({step:3},'');
     goStep(3);
     confetti();
-  } else showMsg(msg,'error',data.error||'Could not place the reservation. Please try again.');
+  } else { btn.disabled = false; btn.classList.remove('is-loading'); showMsg(msg,'error',data.error||'Could not place the reservation. Please try again.'); }
 });
 
 // Promo
@@ -318,6 +336,13 @@ document.getElementById('promo-apply-btn').addEventListener('click', async ()=>{
 });
 
 // Inline onclick handlers need global access from a module
+function togglePaymentFields(){
+  const m = document.querySelector('input[name="payment-method"]:checked')?.value;
+  const f = document.getElementById('online-payment-fields');
+  if (f) f.hidden = (m !== 'online');
+}
+document.querySelectorAll('input[name="payment-method"]').forEach(r=>r.addEventListener('change',togglePaymentFields));
+togglePaymentFields();
 window.updateQty=updateQty;
 window.removeItem=removeItem;
 

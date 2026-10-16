@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PelotonHub Admin — Payments</title>
+  <link rel="icon" type="image/png" href="../img/icons/favicon-64.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700,1,400;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/styles.css" /><link rel="stylesheet" href="css/admin.css" />
+</head>
+<body class="admin-body">
+<button class="admin-sidebar-toggle" id="admin-sidebar-toggle" aria-label="Toggle menu">&#9776;</button>
+<div class="admin-shell">
+<aside class="admin-sidebar" id="admin-sidebar">
+  <div class="admin-sidebar-brand"><span>Peloton<span class="dot">Hub</span></span><span class="tag-admin">Admin</span></div>
+  <ul class="admin-nav">
+    <li class="admin-nav-label">Overview</li>
+    <li><a href="index.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-sliders"/></svg></span> Dashboard</a></li>
+    <li><a href="payments.html" class="active"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-receipt"/></svg></span> Payments</a></li>
+    <li class="admin-nav-label">Catalog</li>
+    <li><a href="products.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-bike"/></svg></span> Products</a></li>
+    <li><a href="stock.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-clipboard"/></svg></span> Stock Management</a></li>
+    <li><a href="orders.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-receipt"/></svg></span> Orders</a></li>
+    <li class="admin-nav-label">Community</li>
+    <li><a href="customers.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-user"/></svg></span> Customers</a></li>
+    <li><a href="events.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-calendar"/></svg></span> Events &amp; RSVPs</a></li>
+    <li><a href="membership.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-trophy"/></svg></span> Membership Tiers</a></li>
+    <li class="admin-nav-label">Support</li>
+    <li><a href="messages.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-bulb"/></svg></span> Messages</a></li>
+  </ul>
+  <div class="admin-sidebar-foot">
+    <div class="admin-avatar" id="admin-initials">SA</div>
+    <div class="who"><div class="name" id="admin-name">Shop Admin</div><div class="role">Administrator</div></div>
+    <button class="admin-logout-btn" id="admin-logout-btn" type="button" aria-label="Log out" title="Log out">&#10148;</button>
+  </div>
+</aside>
+<div class="admin-main">
+  <header class="admin-topbar">
+    <div><h1>Payments</h1><p class="sub"><span id="payment-count">0</span> payment records</p></div>
+  </header>
+  <main class="admin-content">
+    <div class="admin-card">
+      <div class="data-toolbar">
+        <select id="p-filter-status">
+          <option value="">All Statuses</option>
+          <option value="pending">Pending</option>
+          <option value="paid">Paid</option>
+          <option value="failed">Failed</option>
+          <option value="refunded">Refunded</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        <button class="btn-outline btn-sm" id="refresh-btn" type="button">Refresh</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Payment</th><th>Order</th><th>User</th><th class="num">Amount</th><th>Method</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+          <tbody id="payments-tbody"><tr><td colspan="8" style="color:var(--ink-3)">Loading&hellip;</td></tr></tbody>
+        </table>
+      </div>
+      <p class="pager" id="payments-pager"></p>
+    </div>
+  </main>
+</div>
+</div>
+<div id="ph-toast" aria-live="polite"></div>
+<script>
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function peso(n){return '\u20B1'+Math.round(n).toLocaleString('en-PH');}
+function cap(s){return s?s.split('_').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '):'';}
+function toast(m){const t=document.getElementById('ph-toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+let ALL_PAYMENTS=[];
+const METHOD={gcash:'GCash',paymaya:'Maya',card:'Card',grab_pay:'GrabPay',paymongo:'Online (PayMongo)',cash:'Cash',pay_at_pickup:'Cash',online:'Online'};
+async function load(){
+  const status=document.getElementById('p-filter-status').value;
+  const d = await window.PAY.apiAdminPayments({ status, limit: 500 });
+  if (d.ok) { ALL_PAYMENTS=d.payments; render(); }
+  else document.getElementById('payments-tbody').innerHTML='<tr><td colspan="8" style="color:var(--error)">Couldn\u2019t load payments: '+esc(d.error)+'</td></tr>';
+}
+function render(){
+  document.getElementById('payment-count').textContent=ALL_PAYMENTS.length;
+  document.getElementById('payments-pager').textContent='Showing '+ALL_PAYMENTS.length+' payment(s)';
+  document.getElementById('payments-tbody').innerHTML=ALL_PAYMENTS.map(p=>`
+    <tr>
+      <td class="mono">${esc(p.paymentId)}</td>
+      <td class="mono">${p.type==='membership'?esc((p.metadata&&p.metadata.tier||'')+' membership'):esc(p.orderId)}</td>
+      <td>${esc(p.userId||'—')}</td>
+      <td class="num">${peso(p.amount)}</td>
+      <td>${esc(METHOD[p.method]||p.method)}</td>
+      <td><span class="status-pill ${p.status==='paid'?'completed':p.status==='pending'?'reserved':p.status==='refunded'?'cancelled':'cancelled'}">${cap(p.status)}</span></td>
+      <td>${esc((p.createdAt||'').slice(0,10))}</td>
+      <td>
+        ${p.status==='pending'?`<button class="btn-primary btn-sm" onclick="markPaid('${esc(p.id)}')">Mark Paid</button>`:''}
+        ${p.status==='paid'?`<button class="btn-outline btn-sm" onclick="refund('${esc(p.id)}')">Refund</button>`:''}
+      </td>
+    </tr>`).join('') || '<tr><td colspan="8" style="color:var(--ink-3)">No payments found.</td></tr>';
+}
+window.markPaid=async function(id){ const r=await window.PAY.apiAdminPaymentMarkPaid(id); toast(r.ok?'Marked paid':'Failed: '+r.error); load(); };
+window.refund=async function(id){ if(!confirm('Refund this payment? Online payments are refunded through PayMongo.')) return; const r=await window.PAY.apiAdminPaymentRefund(id,'Refunded by admin'); toast(r.ok?'Refunded':'Failed: '+r.error); load(); };
+document.getElementById('p-filter-status').addEventListener('change',load);
+document.getElementById('refresh-btn').addEventListener('click',load);
+document.addEventListener('admin-ready',()=>{ load(); });
+</script>
+<script type="module">import * as PAY from '../js/mongo-payment.js'; window.PAY = PAY;</script>
+<script type="module" src="js/admin-common.js"></script>
+</body>
+</html>

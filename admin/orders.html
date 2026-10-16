@@ -18,6 +18,7 @@
   <ul class="admin-nav">
     <li class="admin-nav-label">Overview</li>
     <li><a href="index.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-sliders"/></svg></span> Dashboard</a></li>
+    <li><a href="payments.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-receipt"/></svg></span> Payments</a></li>
     <li class="admin-nav-label">Catalog</li>
     <li><a href="products.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-bike"/></svg></span> Products</a></li>
     <li><a href="stock.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-clipboard"/></svg></span> Stock Management</a></li>
@@ -61,8 +62,8 @@
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Order</th><th>Customer</th><th>Date</th><th>Pickup</th><th class="num">Total</th><th>Status</th></tr></thead>
-            <tbody id="orders-tbody"><tr><td colspan="6" style="color:var(--ink-3)">Loading&hellip;</td></tr></tbody>
+            <thead><tr><th>Order</th><th>Customer</th><th>Date</th><th>Pickup</th><th class="num">Total</th><th>Payment</th><th>Status</th></tr></thead>
+            <tbody id="orders-tbody"><tr><td colspan="7" style="color:var(--ink-3)">Loading&hellip;</td></tr></tbody>
           </table>
         </div>
         <p class="pager" id="orders-pager"></p>
@@ -84,6 +85,7 @@
       </div>
       <p style="font-size:0.85rem;margin-bottom:0.3rem;">Pickup: <strong id="om-pickup"></strong></p>
       <p style="font-size:0.85rem;margin-bottom:0.3rem;">Discount: <strong id="om-discount"></strong></p>
+      <p style="font-size:0.85rem;margin-bottom:0.3rem;">Payment: <strong id="om-payment"></strong></p>
       <p style="font-size:1rem;margin-bottom:1.4rem;">Total: <strong id="om-total" class="mono"></strong></p>
       <div class="modal-actions">
         <button class="btn-outline btn-sm" id="om-cancel-btn" type="button">Cancel Order</button>
@@ -102,6 +104,13 @@ function toast(m){const t=document.getElementById('ph-toast');t.textContent=m;t.
 function qs(s){return document.querySelector(s);}
 
 let ALL_ORDERS=[];
+let PAYMAP={};   // orderId → latest payment from the payment server (MongoDB)
+const METHOD={gcash:'GCash',paymaya:'Maya',card:'Card',grab_pay:'GrabPay',paymongo:'Online (PayMongo)',cash:'Cash',pay_at_pickup:'Cash',online:'Online'};
+function payText(o){
+  const p=PAYMAP[o.id];
+  if(!p) return esc(o.payment_method==='paymongo'?'Online (PayMongo)':'Cash')+' <span style="font-size:0.72rem;color:var(--ink-3);">(no record)</span>';
+  return esc(METHOD[p.method]||cap(p.method))+` <span class="status-pill ${p.status==='paid'?'completed':p.status==='pending'?'reserved':'cancelled'}" style="font-size:0.6rem;margin-left:3px;">${esc(cap(p.status))}</span>`;
+}
 const state={search:'',status:''};
 let activeOrderId=null;
 
@@ -118,15 +127,24 @@ function render(){
       <td>${esc((o.created_at||'').slice(0,10))}</td>
       <td>${esc(o.pickup_date||'')} ${o.pickup_time?'&middot; '+esc(o.pickup_time):''}</td>
       <td class="num">${peso(o.total)}</td>
+      <td>${payText(o)}</td>
       <td><span class="status-pill ${o.status}">${cap(o.status)}</span></td>
-    </tr>`).join('')||(ALL_ORDERS.length===0?'<tr><td colspan="6" style="color:var(--ink-3)">No orders yet.</td></tr>':'<tr><td colspan="6">No orders match your filters.</td></tr>');
+    </tr>`).join('')||(ALL_ORDERS.length===0?'<tr><td colspan="7" style="color:var(--ink-3)">No orders yet.</td></tr>':'<tr><td colspan="7">No orders match your filters.</td></tr>');
 }
 
 function loadOrders(){
   const params=new URLSearchParams();
   if(state.search) params.set('q',state.search);
   if(state.status) params.set('status',state.status);
-  FB.apiAdminOrdersGet(Object.fromEntries(params)).then(d=>{if(d.ok){ALL_ORDERS=d.orders;render();}});
+  Promise.all([
+    FB.apiAdminOrdersGet(Object.fromEntries(params)),
+    window.PAY.apiAdminPayments({limit:500}),
+  ]).then(([d,p])=>{
+    PAYMAP={};
+    if(p.ok) p.payments.slice().reverse().forEach(x=>{ PAYMAP[x.orderId]=x; });   // newest wins
+    else toast('Payments unavailable: '+p.error);
+    if(d.ok){ALL_ORDERS=d.orders;render();}
+  });
 }
 
 qs('#o-search').addEventListener('input',e=>{state.search=e.target.value;render();});
@@ -143,6 +161,7 @@ window.openOrder=function(id){
     qs('#om-items').innerHTML=(o.items||[]).map(it=>`<tr><td>${esc(it.name)}</td><td class="num">${it.qty}</td><td class="num">${peso(it.price*it.qty)}</td></tr>`).join('');
     qs('#om-pickup').textContent=(o.pickup_date||'—')+' at '+(o.pickup_time||'—');
     qs('#om-discount').textContent=o.discount_pct?o.discount_pct+'%':'None';
+    qs('#om-payment').innerHTML=payText(o);
     qs('#om-total').textContent=peso(o.total);
     const canAct=o.status==='reserved';
     qs('#om-cancel-btn').disabled=!canAct;qs('#om-complete-btn').disabled=!canAct;
@@ -169,6 +188,7 @@ document.addEventListener('admin-ready',()=>{
   loadOrders();
 });
 </script>
+<script type="module">import * as PAY from '../js/mongo-payment.js'; window.PAY = PAY;</script>
 <script type="module" src="js/admin-common.js"></script>
 </body>
 </html>

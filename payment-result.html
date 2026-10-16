@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>PelotonHub — Payment</title>
+  <script src="js/page-loader.js"></script>
+  <link rel="icon" type="image/png" href="img/icons/favicon-64.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/shop.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#ff4d23" />
+</head>
+<body>
+<a href="#main" class="skip-link">Skip to content</a>
+<nav class="navbar">
+  <a href="home.html" class="logo"><span>Peloton<span class="dot">Hub</span></span></a>
+  <div class="nav-actions">
+    <a href="cart.html" class="icon-btn" aria-label="View cart"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-cart"/></svg><span class="badge" hidden>0</span></a>
+    <a href="auth.html" class="btn-nav" id="nav-auth-btn">Sign In</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <p class="eyebrow">Payment</p>
+  <h1 id="pr-title">Checking your payment&hellip;</h1>
+  <p id="pr-sub">This only takes a moment.</p>
+</div>
+
+<main id="main" class="section">
+  <div class="panel" id="pr-card" style="max-width:560px;text-align:center;padding:2.2rem 1.6rem;">
+    <div class="ph-success-ico" id="pr-ico" aria-hidden="true" hidden>&#10003;</div>
+    <p id="pr-msg" style="color:var(--ink-2);font-size:0.9rem;line-height:1.7;margin-bottom:1.4rem;">Confirming with PayMongo&hellip;</p>
+    <div id="pr-details" hidden style="border:1px solid var(--line);border-radius:var(--radius);padding:1rem;margin:0 auto 1.6rem;text-align:left;font-size:0.85rem;line-height:1.9;">
+      <div>Payment ID: <strong class="num" id="pr-pid"></strong></div>
+      <div id="pr-order-row">For: <strong class="num" id="pr-order"></strong></div>
+      <div>Amount: <strong class="num" id="pr-amount"></strong></div>
+      <div>Paid with: <strong id="pr-method"></strong></div>
+    </div>
+    <p class="form-msg" id="pr-error" aria-live="polite"></p>
+    <div id="pr-actions" style="display:flex;gap:0.7rem;justify-content:center;flex-wrap:wrap;"></div>
+  </div>
+</main>
+
+
+<footer>
+  <div class="footer-bottom">&copy; 2026 PelotonHub. All rights reserved.</div>
+</footer>
+<script type="module">
+import { getUser, peso, holdLoader, confetti, showMsg } from './js/main.js';
+import { apiPaymongoVerify, apiPaymongoCheckout, goToCheckout } from './js/mongo-payment.js';
+
+const ready = holdLoader();
+const q = new URLSearchParams(location.search);
+const id = q.get('payment');
+const cancelled = q.get('cancelled') === '1';
+const $ = s => document.getElementById(s);
+const METHOD = { gcash: 'GCash', paymaya: 'Maya', card: 'Card', grab_pay: 'GrabPay', paymongo: 'PayMongo', cash: 'Cash' };
+
+function actions(html) { $('pr-actions').innerHTML = html; }
+function show(p) {
+  $('pr-details').hidden = false;
+  $('pr-pid').textContent = p.paymentId;
+  $('pr-order').textContent = p.type === 'membership' ? `${p.metadata?.tier || ''} membership` : p.orderId;
+  $('pr-amount').textContent = peso(p.amount);
+  $('pr-method').textContent = METHOD[p.method] || p.method;
+}
+
+async function check(tries) {
+  const r = await apiPaymongoVerify(id);
+  if (!r.ok) throw new Error(r.error);
+  const p = r.payment;
+  if (p.status === 'paid') {
+    $('pr-title').textContent = 'Payment successful';
+    $('pr-sub').textContent = 'Thank you! A copy is saved to your account.';
+    $('pr-ico').hidden = false;
+    $('pr-msg').textContent = p.type === 'membership'
+      ? 'Your membership payment is received. The shop will switch on your new tier shortly.'
+      : 'Your reservation is paid. Show your Reservation ID at the counter to pick up your items within 48 hours.';
+    show(p);
+    actions(p.type === 'membership'
+      ? '<a href="profile.html"><button class="btn-primary" type="button">Go to My Profile</button></a>'
+      : '<a href="orders.html"><button class="btn-primary" type="button">View My Orders</button></a>');
+    confetti();
+    return;
+  }
+  if (!cancelled && tries > 0) {             // PayMongo can take a few seconds to confirm
+    await new Promise(r => setTimeout(r, 2500));
+    return check(tries - 1);
+  }
+  $('pr-title').textContent = cancelled ? 'Payment cancelled' : 'Payment not completed yet';
+  $('pr-sub').textContent = cancelled ? 'No money was taken.' : 'If you did pay, it can take a minute to show here.';
+  $('pr-msg').textContent = p.type === 'membership'
+    ? 'Your membership wasn’t paid. You can try again, or pay at the shop counter.'
+    : 'Your reservation is still saved and held for 48 hours. Try paying again, or pay in store at pickup.';
+  show(p);
+  actions('<button class="btn-primary" type="button" id="pr-retry">Try paying again</button>'
+    + (p.type === 'membership' ? '<a href="membership.html"><button class="btn-outline" type="button">Back to Membership</button></a>'
+                              : '<a href="orders.html"><button class="btn-outline" type="button">View My Orders</button></a>'));
+  $('pr-retry').addEventListener('click', async e => {
+    e.target.disabled = true; e.target.textContent = 'Opening PayMongo…';
+    const again = await apiPaymongoCheckout(p.type === 'membership'
+      ? { type: 'membership', tier: p.metadata?.tier } : { type: 'order', orderId: p.orderId });
+    if (again.ok) return goToCheckout(again.checkoutUrl);
+    e.target.disabled = false; e.target.textContent = 'Try paying again';
+    showMsg($('pr-error'), 'error', again.error);
+  });
+}
+
+const user = await getUser();
+try {
+  if (!id) throw new Error('No payment to check.');
+  if (!user) throw new Error('Please sign in to see your payment.');
+  await check(cancelled ? 0 : 4);
+} catch (e) {
+  $('pr-title').textContent = 'Couldn’t check the payment';
+  $('pr-sub').textContent = '';
+  $('pr-msg').textContent = e.message;
+  actions('<button class="btn-primary" type="button" onclick="location.reload()">Check again</button><a href="orders.html"><button class="btn-outline" type="button">My Orders</button></a>');
+}
+ready();
+</script>
+</body>
+</html>
