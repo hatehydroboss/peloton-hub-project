@@ -1095,7 +1095,7 @@ export async function apiAdminMe() {
  * Returns: { ok, revenue, pending, active_members, low_stock,
  *             chart, recent_orders, top_products, activity }
  */
-export async function apiAdminDashboard() {
+export async function apiAdminDashboard({ onlyOrderIds = null } = {}) {
   try {
     const [ordersSnap, membersSnap, productsSnap, msgsSnap] = await Promise.all([
       getDocs(collection(db, 'orders')),
@@ -1104,7 +1104,10 @@ export async function apiAdminDashboard() {
       getDocs(query(collection(db, 'support_tickets'), orderBy('created_at', 'desc'), limit(5))),
     ]);
 
-    const orders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data(), _ts: d.data().created_at instanceof Timestamp ? d.data().created_at.toDate() : null }));
+    let orders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data(), _ts: d.data().created_at instanceof Timestamp ? d.data().created_at.toDate() : null }));
+    // Admin can limit the dashboard to orders that have a real payment (paid or pending)
+    const hidden = onlyOrderIds ? orders.filter(o => !onlyOrderIds.includes(o.id)).length : 0;
+    if (onlyOrderIds) orders = orders.filter(o => onlyOrderIds.includes(o.id));
     const live   = orders.filter(o => o.status !== 'cancelled');
     const since  = days => new Date(Date.now() - days * 24 * 3600 * 1000);
 
@@ -1151,7 +1154,7 @@ export async function apiAdminDashboard() {
       ...msgsSnap.docs.map(d => ({ type: 'message', ref: `#${d.id.slice(0, 6)}`, status: d.data().status, actor: d.data().name, ts: toISO(d.data().created_at) })),
     ].sort((a, b) => (b.ts || '').localeCompare(a.ts || '')).slice(0, 10);
 
-    return { ok: true, revenue, pending, active_members, low_stock, chart, recent_orders, top_products, activity };
+    return { ok: true, revenue, pending, active_members, low_stock, chart, recent_orders, top_products, activity, hidden };
   } catch (e) {
     return { ok: false, error: e.message };
   }
