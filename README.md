@@ -70,17 +70,19 @@ files from your laptop.
 ```
 npm install -g firebase-tools
 firebase login
+firebase hosting:sites:create pelotonhub   # first time only
 firebase deploy --only hosting
 ```
 Run these in the project folder (`firebase.json` and `.firebaserc` are already set up).
-The site goes live at **https://peletonhub.web.app**. That domain is already allowed for
-Firebase sign-in.
+The site goes live at **https://pelotonhub.web.app**. The Firebase project itself is still
+named `peletonhub` (project IDs can't be renamed), so add `pelotonhub.web.app` under
+Firebase Console → Authentication → Settings → Authorized domains for sign-in to work.
 
 ### 2. Make the APK
 A ready-built debug APK is included at `release/PelotonHub-debug.apk` — copy it to an Android phone and install it.
 To build a new one:
 
-1. Open <https://www.pwabuilder.com>, enter `https://peletonhub.web.app/index.html`, click **Start**.
+1. Open <https://www.pwabuilder.com>, enter `https://pelotonhub.web.app/index.html`, click **Start**.
 2. Choose **Package for stores → Android → Generate**, then download the zip.
 3. Copy the `.apk` from the zip to the phone and install it (allow "install unknown apps").
 
@@ -88,7 +90,7 @@ To build a new one:
 | Who | Device | Open |
 |-----|--------|------|
 | Customer (prof) | Phone — the PelotonHub app | Register, browse, add to cart, reserve |
-| Admin | Laptop browser | `https://peletonhub.web.app/admin/login.html` → Orders, Stock, Dashboard |
+| Admin | Laptop browser | `https://pelotonhub.web.app/admin/login.html` → Orders, Stock, Dashboard |
 
 An order placed on the phone shows up in Admin → Orders as soon as the page is
 opened, and its stock is taken from Admin → Stock Management.

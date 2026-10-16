@@ -27,7 +27,7 @@ function toDTO(p) {
 function fail(res, status, error) { return res.status(status).json({ ok: false, error }); }
 
 // Pages PayMongo may send the customer back to (website, Android app, local testing)
-const RETURN_ORIGINS = (process.env.APP_URLS || 'https://peletonhub.web.app,https://localhost,http://localhost:5500,http://127.0.0.1:5500')
+const RETURN_ORIGINS = (process.env.APP_URLS || 'https://pelotonhub.web.app,https://peletonhub.web.app,https://localhost,http://localhost:5500,http://127.0.0.1:5500')
   .split(',').map(s => s.trim().replace(/\/$/, '')).filter(Boolean);
 
 /**

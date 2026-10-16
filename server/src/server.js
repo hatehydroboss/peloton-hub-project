@@ -11,7 +11,7 @@ const errorHandler = require('./middleware/errorMiddleware');
 const app = express();
 
 // Who may call the API from a browser: the website, the Android app (https://localhost) and local testing
-const ORIGINS = (process.env.CORS_ORIGIN || 'https://peletonhub.web.app,https://peletonhub.firebaseapp.com,https://localhost,http://localhost:5500,http://127.0.0.1:5500')
+const ORIGINS = (process.env.CORS_ORIGIN || 'https://pelotonhub.web.app,https://peletonhub.web.app,https://peletonhub.firebaseapp.com,https://localhost,http://localhost:5500,http://127.0.0.1:5500')
   .split(',').map(s => s.trim()).filter(Boolean);
 app.use(cors({ origin: ORIGINS.includes('*') ? '*' : ORIGINS }));
 
