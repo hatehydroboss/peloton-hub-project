@@ -42,7 +42,7 @@
     <div class="admin-card">
       <div class="data-toolbar">
         <select id="p-filter-status">
-          <option value="">All Statuses</option>
+          <option value="">All (except failed)</option>
           <option value="pending">Pending</option>
           <option value="paid">Paid</option>
           <option value="failed">Failed</option>
@@ -73,7 +73,8 @@ const METHOD={gcash:'GCash',paymaya:'Maya',card:'Card',grab_pay:'GrabPay',qrph:'
 async function load(){
   const status=document.getElementById('p-filter-status').value;
   const d = await window.PAY.apiAdminPayments({ status, limit: 500 });
-  if (d.ok) { ALL_PAYMENTS=d.payments; render(); }
+  // Failed attempts (e.g. a checkout that never opened) stay hidden unless "Failed" is picked
+  if (d.ok) { ALL_PAYMENTS = status ? d.payments : d.payments.filter(p => p.status !== 'failed'); render(); }
   else document.getElementById('payments-tbody').innerHTML='<tr><td colspan="8" style="color:var(--error)">Couldn\u2019t load payments: '+esc(d.error)+'</td></tr>';
 }
 function render(){

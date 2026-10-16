@@ -59,6 +59,7 @@
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
           </select>
+          <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.8rem;color:var(--ink-2);cursor:pointer;white-space:nowrap;"><input type="checkbox" id="o-show-unrecorded" /> Show orders with failed or no payment</label>
         </div>
         <div class="table-wrap">
           <table>
@@ -105,21 +106,26 @@ function qs(s){return document.querySelector(s);}
 
 let ALL_ORDERS=[];
 let PAYMAP={};   // orderId → latest payment from the payment server (MongoDB)
+let PAY_OK=false; // false when the payment server couldn't be reached: then nothing is hidden
+const hasPayment=o=>{const p=PAYMAP[o.id];return !!p&&p.status!=='failed';};
 const METHOD={gcash:'GCash',paymaya:'Maya',card:'Card',grab_pay:'GrabPay',qrph:'QRPh',paymongo:'Online (PayMongo)',cash:'Cash',pay_at_pickup:'Cash',online:'Online'};
 function payText(o){
   const p=PAYMAP[o.id];
   if(!p) return esc(o.payment_method==='paymongo'?'Online (PayMongo)':'Cash')+' <span style="font-size:0.72rem;color:var(--ink-3);">(no record)</span>';
   return esc(METHOD[p.method]||cap(p.method))+` <span class="status-pill ${p.status==='paid'?'completed':p.status==='pending'?'reserved':'cancelled'}" style="font-size:0.6rem;margin-left:3px;">${esc(cap(p.status))}</span>`;
 }
-const state={search:'',status:''};
+const state={search:'',status:'',showUnrecorded:false};
 let activeOrderId=null;
 
 function render(){
   let list=ALL_ORDERS.slice();
   if(state.search){const q=state.search.toLowerCase();list=list.filter(o=>o.id.toLowerCase().includes(q)||(o.customer_name||'').toLowerCase().includes(q));}
   if(state.status) list=list.filter(o=>o.status===state.status);
+  const hideThem=!state.showUnrecorded&&PAY_OK;
+  const hidden=hideThem?list.filter(o=>!hasPayment(o)).length:0;
+  if(hideThem) list=list.filter(hasPayment);   // no payment record, or only a failed attempt (e.g. old test orders)
   qs('#order-count').textContent=ALL_ORDERS.length;
-  qs('#orders-pager').textContent='Showing '+list.length+' of '+ALL_ORDERS.length+' orders';
+  qs('#orders-pager').textContent='Showing '+list.length+' of '+ALL_ORDERS.length+' orders'+(hidden?` (${hidden} with failed or no payment hidden)`:'');
   qs('#orders-tbody').innerHTML=list.map(o=>`
     <tr class="tr-clickable" onclick="openOrder('${esc(o.id)}')">
       <td class="mono">${esc(o.id)}</td>
@@ -140,7 +146,7 @@ function loadOrders(){
     FB.apiAdminOrdersGet(Object.fromEntries(params)),
     window.PAY.apiAdminPayments({limit:500}),
   ]).then(([d,p])=>{
-    PAYMAP={};
+    PAYMAP={}; PAY_OK=!!p.ok;
     if(p.ok) p.payments.slice().reverse().forEach(x=>{ PAYMAP[x.orderId]=x; });   // newest wins
     else toast('Payments unavailable: '+p.error);
     if(d.ok){ALL_ORDERS=d.orders;render();}
@@ -149,6 +155,7 @@ function loadOrders(){
 
 qs('#o-search').addEventListener('input',e=>{state.search=e.target.value;render();});
 qs('#o-filter-status').addEventListener('change',e=>{state.status=e.target.value;render();});
+qs('#o-show-unrecorded').addEventListener('change',e=>{state.showUnrecorded=e.target.checked;render();});
 
 const modal=qs('#order-modal');
 window.openOrder=function(id){
