@@ -669,7 +669,7 @@ export async function apiOrdersGet({ id } = {}) {
  * Mirrors: POST /api/orders.php  action=place
  * Returns: { ok, order_id, total, discount_pct }
  */
-export async function apiOrderPlace({ promo_code = '', pickup_date = '', pickup_time = '', pickup_notes = '' } = {}) {
+export async function apiOrderPlace({ promo_code = '', pickup_date = '', pickup_time = '', pickup_notes = '', payment_method = 'cash' } = {}) {
   const u = auth.currentUser;
   if (!u) return { ok: false, error: 'Not logged in' };
   try {
@@ -721,10 +721,12 @@ export async function apiOrderPlace({ promo_code = '', pickup_date = '', pickup_
         tier:           userData.tier || 'Spoke',
         items:          cart.map(l => ({ product_id: l.product_id, name: l.name, price: l.price, qty: l.qty, size: l.size || null })),
         item_count:     cart.reduce((n, l) => n + l.qty, 0),
-        discount_pct:  discPct,
+        discount_pct:   discPct,
         subtotal,
         total,
-        status:        'reserved',
+        payment_method: (payment_method === 'online' ? 'paymongo' : 'cash'),
+        payment_status: 'pending',   // the payment server (MongoDB) records whether it was paid
+        status:         'reserved',
         pickup_date:   pickup_date  || null,
         pickup_time:   pickup_time  || null,
         pickup_notes:  pickup_notes || null,
@@ -1751,6 +1753,22 @@ export async function apiAdminSettingsSave({ tier_discount_Spoke, tier_discount_
       tier_discount_Chain:   Math.min(100, Math.max(0, parseInt(tier_discount_Chain ?? 10))),
       tier_discount_Peloton: Math.min(100, Math.max(0, parseInt(tier_discount_Peloton ?? 20))),
     });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+// ================================================================
+//  MEMBERSHIP UPGRADE  (direct, paid)
+// ================================================================
+export async function apiMembershipUpgrade({ tier }) {
+  const u = auth.currentUser;
+  if (!u) return { ok: false, error: 'Not logged in' };
+  if (!['Spoke', 'Chain', 'Peloton'].includes(tier))
+    return { ok: false, error: 'Invalid tier' };
+  try {
+    await updateDoc(doc(db, 'users', u.uid), { tier, updated_at: serverTimestamp() });
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e.message };

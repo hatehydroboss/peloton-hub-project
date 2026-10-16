@@ -1,0 +1,106 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    // Admins are the accounts listed in the admins collection (added in the Firebase Console)
+    function isAdmin() {
+      return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    function onlyChanges(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    // Admin accounts: an admin reads their own record; records are managed in the Firebase Console only
+    match /admins/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Customer profiles + carts
+    match /users/{uid} {
+      allow read: if (signedIn() && request.auth.uid == uid) || isAdmin();
+      // New accounts start on the free tier; paid tiers are switched on by an admin
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.status == 'active'
+        && request.resource.data.tier == 'Spoke'
+        && request.resource.data.get('points', 0) == 0;
+      allow update: if (signedIn() && request.auth.uid == uid
+          && onlyChanges(['first_name', 'last_name', 'name', 'mobile', 'address', 'notifications']))
+        || isAdmin();
+      match /cart/{item} {
+        allow read, write: if signedIn() && request.auth.uid == uid;
+      }
+    }
+
+    // Catalog: public read, admin write; checkout/cancel may adjust stock only
+    match /products/{id} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (signedIn() && onlyChanges(['stock_qty', 'in_stock', 'updated_at']));
+      match /reviews/{rid} {
+        allow read: if true;
+        allow create: if isAdmin()
+          || (signedIn() && request.resource.data.user_id == request.auth.uid);
+        allow update, delete: if isAdmin();
+      }
+    }
+
+    // Events: public read, admin write; RSVPs may change the filled count only
+    match /events/{id} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (signedIn() && onlyChanges(['filled']));
+    }
+
+    match /rsvps/{id} {
+      allow read: if isAdmin()
+        || (signedIn() && (resource == null || resource.data.user_id == request.auth.uid));
+      allow create: if signedIn() && request.resource.data.user_id == request.auth.uid;
+      allow delete: if signedIn() && resource.data.user_id == request.auth.uid;
+    }
+
+    match /wishlists/{id} {
+      allow read: if signedIn() && (resource == null || resource.data.user_id == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.user_id == request.auth.uid;
+      allow delete: if signedIn() && resource.data.user_id == request.auth.uid;
+    }
+
+    // Orders: customers create and cancel their own; admins manage all
+    match /orders/{orderId} {
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.user_id == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.user_id == request.auth.uid
+        && request.resource.data.status == 'reserved';
+      allow update: if isAdmin()
+        || (signedIn() && resource.data.user_id == request.auth.uid
+            && request.resource.data.status == 'cancelled'
+            && onlyChanges(['status', 'updated_at']));
+      match /items/{itemId} {
+        allow read: if isAdmin() || (signedIn() &&
+          get(/databases/$(database)/documents/orders/$(orderId)).data.user_id == request.auth.uid);
+        allow create: if signedIn() &&
+          getAfter(/databases/$(database)/documents/orders/$(orderId)).data.user_id == request.auth.uid;
+      }
+    }
+
+    // Public reference data
+    match /promo_codes/{code} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /config/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Support tickets: anyone can send one; only admins read and reply
+    match /support_tickets/{id} {
+      allow create: if request.resource.data.status == 'new';
+      allow read, update: if isAdmin();
+      match /replies/{rid} {
+        allow read, write: if isAdmin();
+      }
+    }
+  }
+}

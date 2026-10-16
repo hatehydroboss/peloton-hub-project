@@ -105,7 +105,32 @@
     </table>
   </div>
   <p class="tier-howto"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-bulb"/></svg> <strong>How upgrading works:</strong> create a free account, then ask at the shop counter (or send a request from the tier card) &mdash; paid tiers are billed in-store and your discount switches on as soon as the shop activates it.</p>
+
 </main>
+
+<!-- MEMBERSHIP UPGRADE PAYMENT MODAL -->
+<div id="membership-pay-modal" hidden style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:1rem;z-index:1000;">
+  <div style="background:#fff;max-width:520px;width:100%;border-radius:12px;padding:1.4rem;">
+    <h3 id="mem-pay-title" style="margin-bottom:0.8rem;">Upgrade Membership</h3>
+    <p id="mem-pay-sub" style="font-size:0.85rem;color:#666;margin-bottom:1rem;"></p>
+    <div class="form-group">
+      <label>Payment Method</label>
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:0.3rem;">
+        <label style="display:flex;align-items:center;gap:0.4rem;"><input type="radio" name="mem-payment-method" value="cash" checked /> Cash in Store</label>
+        <label style="display:flex;align-items:center;gap:0.4rem;"><input type="radio" name="mem-payment-method" value="online" /> Pay Online (GCash, Maya, Card)</label>
+      </div>
+    </div>
+    <div id="mem-online-fields" hidden style="margin-top:0.8rem;padding:0.8rem 1rem;border:1px solid #e5e5e5;border-radius:8px;font-size:0.8rem;color:#555;line-height:1.6;">
+      You&rsquo;ll go to <strong>PayMongo</strong>&rsquo;s secure checkout to pay with GCash, Maya, GrabPay or a card, then come back here.
+    </div>
+    <p id="mem-pay-msg" class="form-msg" aria-live="polite" style="margin-top:0.6rem;"></p>
+    <div style="display:flex;gap:0.6rem;margin-top:1rem;justify-content:flex-end;">
+      <button type="button" id="mem-pay-cancel" class="btn-outline btn-sm">Cancel</button>
+      <button type="button" id="mem-pay-confirm" class="btn-primary btn-sm">Pay &amp; Request Upgrade</button>
+    </div>
+  </div>
+</div>
+
 
 <footer>
   <div class="footer-grid">
@@ -144,6 +169,88 @@
 <script type="module">
 // Tier cards (live discounts + buttons) are handled by js/main.js
 import './js/main.js';
+import { apiPaymentCreate, apiPaymongoCheckout, goToCheckout, wakePaymentServer } from './js/mongo-payment.js';
+wakePaymentServer();
+import { getUser } from './js/main.js';
+
+const TIER_PRICE = { Chain: 499, Peloton: 999 };
+
+let selectedTier = null;
+const modal = document.getElementById('membership-pay-modal');
+
+function showMsg(el, type, text) {
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'form-msg show ' + (type === 'error' ? 'error' : 'success');
+}
+
+function openModal(tier) {
+  selectedTier = tier;
+  document.getElementById('mem-pay-title').textContent = 'Upgrade to ' + tier;
+  document.getElementById('mem-pay-sub').textContent = (tier === 'Chain' ? 'Chain is 499/month' : 'Peloton is 999/month') + ', billed in store for cash upgrades or processed online.';
+  modal.hidden = false;
+  const cash = document.querySelector('input[name="mem-payment-method"][value="cash"]');
+  if (cash) cash.checked = true;
+  const fields = document.getElementById('mem-online-fields');
+  if (fields) fields.hidden = true;
+  const m = document.getElementById('mem-pay-msg');
+  if (m) { m.textContent = ''; m.className = 'form-msg'; }
+}
+
+function toggleMemFields() {
+  const val = document.querySelector('input[name="mem-payment-method"]:checked')?.value;
+  const f = document.getElementById('mem-online-fields');
+  if (f) f.hidden = (val !== 'online');
+}
+
+document.querySelectorAll('input[name="mem-payment-method"]').forEach(r => r.addEventListener('change', toggleMemFields));
+document.getElementById('mem-pay-cancel')?.addEventListener('click', () => { modal.hidden = true; selectedTier = null; });
+
+document.getElementById('mem-pay-confirm')?.addEventListener('click', async () => {
+  if (!selectedTier) return;
+  const btn = document.getElementById('mem-pay-confirm');
+  const msg = document.getElementById('mem-pay-msg');
+  const method = document.querySelector('input[name="mem-payment-method"]:checked')?.value || 'cash';
+
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = method === 'online' ? 'Opening PayMongo…' : 'Saving…';
+
+  const user = await getUser();
+  if (!user) { window.location.href = 'auth.html?tier=' + encodeURIComponent(selectedTier); btn.disabled=false; btn.textContent=original; return; }
+
+  try {
+    if (method === 'online') {
+      const pay = await apiPaymongoCheckout({ type: 'membership', tier: selectedTier });
+      if (!pay.ok) throw new Error(pay.error);
+      return goToCheckout(pay.checkoutUrl);   // PayMongo returns to payment-result.html
+    }
+    const res = await apiPaymentCreate({ type: 'membership', tier: selectedTier, method: 'cash' });
+    if (!res.ok) throw new Error(res.error || 'Could not save your request. Try again.');   // only confirm what was really saved
+    modal.hidden = true;
+    alert('Upgrade request recorded. ' + selectedTier + ' membership is pending payment at the shop counter and admin activation.');
+  } catch (e) {
+    showMsg(msg, 'error', e.message || 'Payment failed. Try again.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+});
+
+const user = await getUser();
+if (user) {
+  document.querySelectorAll('.tier-join').forEach(link => {
+    const href = link.getAttribute('href') || '';
+    const tier = (href.match(/tier=([^&]+)/) || [])[1];
+    const decoded = tier ? decodeURIComponent(tier) : '';
+    if (!TIER_PRICE[decoded]) return;
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      openModal(decoded);
+    });
+  });
+}
 </script>
+
 </body>
 </html>

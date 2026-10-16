@@ -222,3 +222,12 @@ member tier discount is applied — they do not stack.
 | Admin login says "Invalid credentials" | Make sure the seed ran, or that an `admins/{uid}` document exists for that account |
 | Catalog shows no products | The seed script hasn't been run against this Firebase project |
 | Uploaded product images look small | Without Firebase Storage, uploads are resized to 800px and stored inside the product document |
+
+## Payments (MongoDB + PayMongo)
+
+Payments run on a separate server in `server/` (Node.js + Express + MongoDB), with online checkout
+through **PayMongo** (GCash, Maya, cards, GrabPay). Accounts, products and orders stay in Firebase.
+The storefront and admin console talk to it through `js/mongo-payment.js`.
+
+See `server/README.md` for how it works, running it on your PC, and putting it online
+(MongoDB Atlas + Render, using `render.yaml`).
