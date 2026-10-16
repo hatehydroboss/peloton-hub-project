@@ -22,6 +22,7 @@ async function call(method, path, body) {
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
+    console.error('[paymongo]', method, path, res.status, JSON.stringify(json.errors || json).slice(0, 500));
     const detail = json.errors && json.errors[0] && (json.errors[0].detail || json.errors[0].code);
     const err = new Error('PayMongo: ' + (detail || `HTTP ${res.status}`));
     err.status = 502;
@@ -30,11 +31,34 @@ async function call(method, path, body) {
   return json.data;
 }
 
+// Methods we'd like to offer; only the ones switched on for this PayMongo account are used
+// (a new account may not have every method yet, and asking for one it lacks makes checkout fail).
+const WANTED_METHODS = ['gcash', 'paymaya', 'card', 'grab_pay', 'qrph'];
+let methodsCache = null;
+async function availableMethods() {
+  if (methodsCache && methodsCache.until > Date.now()) return methodsCache.list;
+  let list;
+  try {
+    const res = await fetch(BASE + '/merchants/capabilities/payment_methods', {
+      headers: { Authorization: authHeader(), Accept: 'application/json' },
+    });
+    const json = await res.json().catch(() => null);
+    const enabled = Array.isArray(json) ? json : (json && Array.isArray(json.data) ? json.data : null);
+    if (enabled) list = WANTED_METHODS.filter(m => enabled.includes(m));
+    console.log('[paymongo] methods enabled for this account:', JSON.stringify(enabled));
+  } catch (err) {
+    console.error('[paymongo] could not read payment methods:', err.message);
+  }
+  if (!list || !list.length) list = ['gcash', 'card'];
+  methodsCache = { list, until: Date.now() + 10 * 60 * 1000 };
+  return list;
+}
+
 /** Create a hosted checkout page. amount is in pesos. */
 async function createCheckoutSession({ amount, description, referenceNumber, successUrl, cancelUrl, customer, metadata }) {
   const attributes = {
     line_items: [{ currency: 'PHP', amount: Math.round(amount * 100), name: description, quantity: 1 }],
-    payment_method_types: ['gcash', 'paymaya', 'card', 'grab_pay'],
+    payment_method_types: await availableMethods(),
     description,
     reference_number: referenceNumber,
     success_url: successUrl,
