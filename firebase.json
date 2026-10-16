@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "pelotonhub",
     "public": ".",
     "ignore": [
       "firebase.json",
