@@ -60,7 +60,7 @@
       </label>
       <p class="form-msg" id="reg-msg" aria-live="polite"></p>
       <button class="btn-full" id="reg-submit" type="button">Create an Account</button>
-      <div class="form-footer" style="margin-top:1rem;">Already have an account? <a href="index.html?signin=1" data-register>Sign In <svg class="picon arrow" aria-hidden="true"><use href="img/icons.svg#i-arrow-right"/></svg></a></div>
+      <div class="form-footer" style="margin-top:1rem;">Already have an account? <a href="index.html?signin=1" id="reg-signin-link" data-register>Sign In <svg class="picon arrow" aria-hidden="true"><use href="img/icons.svg#i-arrow-right"/></svg></a></div>
     </div>
   </div>
 
@@ -73,8 +73,13 @@ document.getElementById('reg-social').innerHTML = socialButtons();
 const ready = holdLoader();
 import { apiRegister } from './js/firebase.js';
 
-// Already logged in → home
-getUser().then(u => { if (u) location.replace('home.html'); else ready(); });
+// Came from another page (support.html): go back there after signing up or in
+const qNext = new URLSearchParams(location.search).get('next');
+const next  = qNext && /^[a-z-]+\.html(\?[\w=&%.-]*)?$/i.test(qNext) ? qNext : null;
+if (next) document.getElementById('reg-signin-link').href = `index.html?signin=1&next=${encodeURIComponent(next)}`;
+
+// Already logged in → home (or the page they were heading to)
+getUser().then(u => { if (u) location.replace(next || 'home.html'); else ready(); });
 
 // Came from a paid tier card: explain how to get it
 const qTier = new URLSearchParams(location.search).get('tier');
@@ -112,7 +117,7 @@ document.getElementById('reg-submit').addEventListener('click', async ()=>{
   if(btn.disabled)return;                      // a double-tap would try to create the account twice
   btn.disabled=true; btn.textContent='Creating account…';
   const data=await apiRegister({first_name:first,last_name:last,email,mobile,password:pass,tier});
-  if(data.ok){location.href='home.html';}
+  if(data.ok){location.href = next || 'home.html';}
   else { btn.disabled=false; btn.textContent='Create an Account'; showMsg(msg,'error',data.error); }
 });
 

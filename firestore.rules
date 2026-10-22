@@ -94,9 +94,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Support tickets: anyone can send one; only admins read and reply
+    // Support tickets: a signed-in customer opens their own; only admins read and reply
     match /support_tickets/{id} {
-      allow create: if request.resource.data.status == 'new';
+      allow create: if signedIn()
+        && request.resource.data.status == 'new'
+        && request.resource.data.user_id == request.auth.uid;
       allow read, update: if isAdmin();
       match /replies/{rid} {
         allow read, write: if isAdmin();

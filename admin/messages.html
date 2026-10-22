@@ -179,7 +179,7 @@ qs('#mm-reply-btn').addEventListener('click',()=>{
   if(!text){toast('Write a reply first');return;}
   btn.disabled=true;btn.textContent='Sending…';      // one click = one reply
   FB.apiAdminMessageReply({id:activeId,reply:text})
-    .then(d=>{if(d.ok){toast('Reply saved');modal.classList.remove('open');loadMessages();}else alert(d.error);})
+    .then(d=>{if(d.ok){toast(d.emailed?'Reply saved and emailed':'Reply saved (email not sent)');modal.classList.remove('open');loadMessages();}else alert(d.error);})
     .finally(()=>{btn.disabled=false;btn.textContent='Send Reply';});
 });
 

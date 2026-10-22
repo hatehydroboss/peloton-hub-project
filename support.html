@@ -48,9 +48,15 @@
   <div class="support-layout">
   <div class="form-card">
     <h2>Contact Us</h2>
+    <div id="s-signed-out" hidden>
+      <p style="color:var(--ink-2);font-size:.88rem;margin-bottom:1.5rem;">Sign in to send us a message. We reply to the email address on your account.</p>
+      <button class="btn-full" type="button" data-signin>Sign In</button>
+      <p style="margin-top:1rem;font-size:.82rem;text-align:center;">New here? <a href="auth.html?next=support.html" data-register style="color:var(--accent);font-weight:700;">Create an account</a></p>
+    </div>
+    <div id="s-form" hidden>
     <div class="form-row">
-      <div class="form-group"><label for="s-name">Your Name</label><input id="s-name" type="text" /></div>
-      <div class="form-group"><label for="s-email">Email</label><input id="s-email" type="email" /></div>
+      <div class="form-group"><label for="s-name">Your Name</label><input id="s-name" type="text" autocomplete="name" /></div>
+      <div class="form-group"><label for="s-email">Email</label><input id="s-email" type="email" readonly aria-readonly="true" style="background:var(--surface);color:var(--ink-2);cursor:default;" /><p style="font-size:.72rem;color:var(--ink-3);margin:.4rem 0 0;">Replies go to the email on your account.</p></div>
     </div>
     <div class="form-group">
       <label for="s-topic">Topic</label>
@@ -67,11 +73,12 @@
     <div class="form-group"><label for="s-message">Message</label><textarea id="s-message" rows="5" placeholder="Describe your question or concern&hellip;"></textarea></div>
     <p class="form-msg" id="s-msg" aria-live="polite"></p>
     <button class="btn-full" id="s-submit" type="button">Send Message</button>
+    </div>
   </div>
   <aside class="help-panel">
     <div class="help-card">
       <span class="help-ico"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-clock"/></svg></span>
-      <div><strong>We reply within 1 business day</strong><p>Replies go to the email you enter here.</p></div>
+      <div><strong>We reply within 1 business day</strong><p>Replies go to the email on your account.</p></div>
     </div>
     <div class="help-card">
       <span class="help-ico"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-receipt"/></svg></span>
@@ -138,26 +145,29 @@ function showMsg(el,type,text){if(!el)return;el.textContent=text;el.className='f
     document.getElementById('s-message').value = `Hi! I'd like to switch my membership to ${tier}. When can I activate it at the shop?`;
 }
 
-// Pre-fill name/email for signed-in members
+// Pre-fill name/email for signed-in members, and keep the form closed to guests
+const nameEl = document.getElementById('s-name');
+const mailEl = document.getElementById('s-email');
 getUser().then(u=>{
-  if(!u) return;
-  document.getElementById('s-name').value  = u.name  || '';
-  document.getElementById('s-email').value = u.email || '';
+  if(!u){ document.getElementById('s-signed-out').hidden = false; return; }
+  document.getElementById('s-form').hidden = false;
+  nameEl.value = u.name  || '';
+  mailEl.value = u.email || '';
 });
 
 document.getElementById('s-submit').addEventListener('click', async ()=>{
-  const name    = document.getElementById('s-name').value.trim();
-  const email   = document.getElementById('s-email').value.trim();
+  const msg     = document.getElementById('s-msg');
+  const user    = await getUser();
+  if(!user) return showMsg(msg,'error','Please sign in to send a message.');
+  const name    = nameEl.value.trim();
   const topic   = document.getElementById('s-topic').value;
   const orderRef= document.getElementById('s-orderref').value.trim();
   const message = document.getElementById('s-message').value.trim();
-  const msg     = document.getElementById('s-msg');
-  if(!name||!email||!message) return showMsg(msg,'error','Name, email and message are required.');
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showMsg(msg,'error','Enter a valid email address so we can reply.');
+  if(!name||!message) return showMsg(msg,'error','Name and message are required.');
   const btn = document.getElementById('s-submit');
   if(btn.disabled) return;                     // a double-tap would send the message twice
   btn.disabled = true; btn.textContent = 'Sending…';
-  const data = await apiSupportSubmit({name,email,topic,order_ref:orderRef,message});
+  const data = await apiSupportSubmit({name,topic,order_ref:orderRef,message});
   btn.disabled = false; btn.textContent = 'Send Message';
   if(data.ok){
     showMsg(msg,'success',data.message);

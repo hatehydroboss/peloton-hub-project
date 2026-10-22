@@ -38,6 +38,7 @@ import {
   increment,
   getCountFromServer,
 }                                             from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { emailNewTicket, emailTicketReply }  from './email.js';
 
 // ── FIREBASE CONFIG ──────────────────────────────────────────
 // Replace with your own project's config from the Firebase Console
@@ -1007,26 +1008,38 @@ export async function apiReviewSubmit({ product_id, rating = 5, body }) {
 
 /**
  * Submit a support ticket.
+ * Only signed-in customers can open a ticket, and the reply address is the one
+ * on the account — so nobody can make the shop mail an address they don't own.
  * Mirrors: POST /api/support.php
  * Returns: { ok, message }
  */
-export async function apiSupportSubmit({ name, email, topic = 'General Inquiry', order_ref = '', message }) {
+export async function apiSupportSubmit({ name, topic = 'General Inquiry', order_ref = '', message }) {
   const u = auth.currentUser;
-  if (!name)    return { ok: false, error: 'Name is required' };
-  if (!email || !email.includes('@')) return { ok: false, error: 'Invalid email' };
+  if (!u) return { ok: false, error: 'Please sign in to send a message.' };
+  const to = (u.email || '').trim().toLowerCase();
+  if (!to) return { ok: false, error: 'Your account has no email address. Please sign in again.' };
   if (!message) return { ok: false, error: 'Message is required' };
+  const profile = await getCurrentUserDoc();
+  const who = (name || '').trim()
+           || profile?.name
+           || [profile?.first_name, profile?.last_name].filter(Boolean).join(' ')
+           || to;
   try {
-    await addDoc(collection(db, 'support_tickets'), {
-      user_id:    u ? u.uid : null,
-      name,
-      email:      email.toLowerCase(),
+    const ref = await addDoc(collection(db, 'support_tickets'), {
+      user_id:    u.uid,
+      name:       who,
+      email:      to,
       topic,
       order_ref:  order_ref || null,
       message,
       status:     'new',
       created_at: serverTimestamp(),
     });
-    return { ok: true, message: 'Your message has been received. We will get back to you shortly.' };
+    // Ticket is saved — emails are best-effort and never fail the submit
+    const sent = await emailNewTicket({ id: ref.id, name: who, email: to, topic, order_ref, message });
+    return { ok: true, message: sent.customer.ok
+      ? `Your message has been received. A confirmation was sent to ${to}.`
+      : 'Your message has been received. We will get back to you shortly.' };
   } catch (e) {
     return { ok: false, error: e.message };
   }
@@ -1703,7 +1716,16 @@ export async function apiAdminMessageReply({ id, reply }) {
       created_at: serverTimestamp(),
     });
     await updateDoc(doc(db, 'support_tickets', id), { status: 'replied' });
-    return { ok: true };
+    // Also email the reply to the customer (best-effort: the reply is already
+    // saved, so a failure here must not report an error and invite a resend)
+    let emailed = false;
+    try {
+      const t = (await getDoc(doc(db, 'support_tickets', id))).data() || {};
+      if (t.email) emailed = (await emailTicketReply({ id, name: t.name, email: t.email, topic: t.topic, reply, admin_name: admin.name })).ok;
+    } catch (e) {
+      console.warn('[email] reply email skipped', e.message);
+    }
+    return { ok: true, emailed };
   } catch (e) {
     return { ok: false, error: e.message };
   }

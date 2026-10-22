@@ -50,7 +50,16 @@ or open the folder in VS Code and click **Go Live**.
    3 promo codes, the tier-discount settings, and creates the admin account.
 4. Remove the script tag again.
 
-### 4. Open the site
+### 4. Publish the Firestore security rules
+
+The rules in `firestore.rules` decide who may write what — for example, a support ticket can only be
+created by the signed-in customer it belongs to. Deploy them once (and again after changing them):
+
+```
+firebase deploy --only firestore:rules
+```
+
+### 5. Open the site
 
 | Page | Path |
 |------|------|
@@ -175,6 +184,58 @@ SIA LAST FINAL PROJECT/
 | `promo_codes` | Discount codes (SPOKE10, RIDE2026, NEWMEMBER) |
 | `config/settings` | Tier discounts |
 | `support_tickets` | Customer support messages (admin replies in `replies` sub-collection) |
+
+---
+
+## Support Emails (EmailJS)
+
+The Contact Us form (`support.html`) and admin replies (`admin/messages.html`) send email through
+[EmailJS](https://www.emailjs.com) straight from the browser (`js/email.js`). Tickets are always saved
+to Firestore first; if email isn't configured or fails, nothing else breaks.
+
+**Only signed-in customers can use the Contact Us form.** A visitor who isn't signed in gets a sign-in
+prompt instead of the form, the ticket is saved with the email address on their account, and the reply
+goes to that address. The Firestore rules enforce this as well (`support_tickets` can only be created by
+the signed-in owner), so nobody can use the form to send mail to an address they don't own.
+
+| When | Email | Goes to |
+|------|-------|---------|
+| Customer submits Contact Us | New-ticket notice (Reply-To = customer) | Shop inbox (`SHOP_EMAIL`) |
+| Customer submits Contact Us | "We received your message" + copy | Customer |
+| Admin clicks **Send Reply** | The reply text | Customer |
+
+**Setup (free plan is enough: 200 emails/month, 2 templates):**
+
+1. Sign up at emailjs.com → **Email Services → Add New Service** → Gmail → connect the shop's Gmail. Copy the **Service ID**.
+2. **Email Templates → Create New Template** → set its Template ID to `template_shop`:
+   - To Email: `{{to_email}}` · Reply To: `{{reply_to}}` · From Name: `PelotonHub Support Form`
+   - Subject: `New support ticket: {{topic}} — {{from_name}} ({{ticket_ref}})`
+   - Content:
+     ```
+     From: {{from_name}} <{{from_email}}>
+     Topic: {{topic}}
+     Order reference: {{order_ref}}
+
+     {{message}}
+     ```
+3. Create a second template with ID `template_customer`:
+   - To Email: `{{to_email}}` · Reply To: `{{reply_to}}` · From Name: `{{shop_name}}`
+   - Subject: `{{subject}}`
+   - Content:
+     ```
+     Hi {{to_name}},
+
+     {{heading}}
+
+     {{message}}
+
+     — The {{shop_name}} team
+     ```
+4. **Account → General** → copy the **Public Key**. If you restrict allowed domains under
+   **Account → Security**, include `pelotonhub.web.app` and `localhost` (the APK and local testing use it).
+5. Open `js/email.js` and fill in `publicKey`, `serviceId` and `SHOP_EMAIL`, then redeploy (`firebase deploy --only hosting`).
+
+The public key is meant to live in front-end code — it can only send using your own templates.
 
 ---
 
