@@ -180,6 +180,22 @@ tbody tr.tr-clickable:hover td { background: var(--surface); }
 .cell-product .p-name { font-weight: 600; font-size: 0.85rem; color: var(--ink-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
 .cell-product .p-sub { font-size: 0.72rem; color: var(--ink-3); }
 .row-actions { display: flex; gap: 0.4rem; justify-content: flex-end; }
+
+/* Small inline badges next to an event title (map location, tier gate) */
+.loc-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.15rem; height: 1.15rem; border-radius: 50%;
+  background: var(--surface); border: 1px solid var(--line);
+  font-size: 0.62rem; vertical-align: 1px; margin-left: 0.25rem;
+}
+.tier-badge {
+  display: inline-block; padding: 2px 8px; border-radius: var(--radius-pill);
+  font-size: 0.6rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+  background: var(--black); color: var(--white); vertical-align: 1px; margin-left: 0.35rem;
+}
+.tier-badge.chain   { background: #6b7280; }
+.tier-badge.peloton { background: var(--brand); }
+
 .icon-action {
   width: 2rem; height: 2rem; border-radius: 50%; border: 1px solid var(--line); background: var(--white);
   cursor: pointer; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center;

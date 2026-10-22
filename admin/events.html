@@ -2,11 +2,40 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PelotonHub Admin — Events &amp; RSVPs</title>
+  <title>PelotonHub Admin — Events & RSVPs</title>
   <link rel="icon" type="image/png" href="../img/icons/favicon-64.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../css/styles.css" /><link rel="stylesheet" href="css/admin.css" />
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <style>
+    /* Search autocomplete dropdown */
+    .map-search-wrapper { position: relative; margin-bottom: 0.5rem; }
+    .map-search-input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--line); border-radius: 6px; font-size: 0.85rem; }
+    .map-search-results { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--line); border-radius: 0 0 6px 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-height: 200px; overflow-y: auto; z-index: 1000; display: none; }
+    .map-search-result-item { padding: 0.5rem 0.75rem; cursor: pointer; border-bottom: 1px solid var(--line); font-size: 0.8rem; }
+    .map-search-result-item:last-child { border-bottom: none; }
+    .map-search-result-item:hover { background: #f5f5f5; }
+    .map-search-result-item .place-name { font-weight: 500; }
+    .map-search-result-item .place-detail { color: var(--ink-3); font-size: 0.7rem; margin-top: 0.15rem; }
+    .map-search-loading { padding: 0.5rem; text-align: center; color: var(--ink-3); font-size: 0.75rem; }
+    
+    /* Directions button */
+    .map-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
+    .map-action-btn { padding: 0.4rem 0.75rem; border: 1px solid var(--line); border-radius: 6px; background: white; font-size: 0.75rem; cursor: pointer; transition: all 0.15s; }
+    .map-action-btn:hover { background: #f5f5f5; }
+    .map-action-btn.primary { background: var(--brand); color: white; border-color: var(--brand); }
+    .map-action-btn.primary:hover { background: var(--brand-dark); }
+    
+    /* Custom marker pulse animation.
+       NOTE: animate the inner <svg>, never the .leaflet-marker-icon itself —
+       Leaflet positions the icon with an inline transform (translate3d) and a
+       CSS animation on that element would override it and break the marker. */
+    @keyframes marker-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+    .custom-bike-marker > svg { transform-origin: 50% 100%; animation: marker-pulse 2s ease-in-out infinite; }
+    .custom-bike-marker { background: none; border: none; }
+  </style>
 </head>
 <body class="admin-body">
 <button class="admin-sidebar-toggle" id="admin-sidebar-toggle" aria-label="Toggle menu">&#9776;</button>
@@ -25,7 +54,7 @@
     <li><a href="orders.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-receipt"/></svg></span> Orders</a></li>
     <li class="admin-nav-label">Community</li>
     <li><a href="customers.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-user"/></svg></span> Customers</a></li>
-    <li><a href="events.html" class="active"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-calendar"/></svg></span> Events &amp; RSVPs</a></li>
+    <li><a href="events.html" class="active"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-calendar"/></svg></span> Events & RSVPs</a></li>
     <li><a href="membership.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-trophy"/></svg></span> Membership Tiers</a></li>
     <li class="admin-nav-label">Support</li>
     <li><a href="messages.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-bulb"/></svg></span> Messages</a></li>
@@ -42,7 +71,7 @@
 
   <div class="admin-main">
     <header class="admin-topbar">
-      <div><h1>Events &amp; RSVPs</h1><p class="sub">Manage group rides and track capacity</p></div>
+      <div><h1>Events & RSVPs</h1><p class="sub">Manage group rides and track capacity</p></div>
       <div class="admin-topbar-right">
         <a href="../home.html" class="btn-nav" style="background:var(--black);" target="_blank" rel="noopener">View Storefront</a>
       </div>
@@ -67,7 +96,7 @@
 
 <!-- ADD / EDIT EVENT MODAL -->
 <div class="modal-overlay" id="event-modal">
-  <div class="modal-box" style="max-width:600px;">
+  <div class="modal-box" style="max-width:800px;">
     <button class="modal-close" id="event-modal-close" aria-label="Close">&times;</button>
     <div class="admin-modal-body">
       <h2 id="event-modal-title">New Event</h2>
@@ -88,7 +117,57 @@
           <select id="ef-featured"><option value="0">No</option><option value="1">Yes</option></select>
         </div>
       </div>
+      <div class="form-group">
+        <label for="ef-min-tier">Who Can Attend</label>
+        <select id="ef-min-tier">
+          <option value="Spoke">Open to everyone (Spoke and above)</option>
+          <option value="Chain">Chain and above only</option>
+          <option value="Peloton">Peloton members only</option>
+        </select>
+        <p style="margin-top:0.35rem;font-size:0.78rem;color:var(--ink-3);">
+          Membership order: Spoke (free) &lt; Chain &lt; Peloton. Members below the chosen
+          tier can see the ride but cannot RSVP to it.
+        </p>
+      </div>
       <div class="form-group"><label for="ef-desc">Description</label><textarea id="ef-desc" rows="3" placeholder="Location, time, requirements&hellip;"></textarea></div>
+
+      <!-- MAP LOCATION PICKER (Leaflet + OpenStreetMap) -->
+      <div class="form-group">
+        <label>Event Location <span class="required" title="Optional">(optional)</span></label>
+        
+        <!-- Place Search -->
+        <div class="map-search-wrapper">
+          <input type="text" id="ef-place-search" class="map-search-input" placeholder="Search place… (e.g. 'Rizal Park, Manila', 'BGC Taguig', 'Nuvali')" autocomplete="off" />
+          <div id="ef-place-results" class="map-search-results" role="listbox"></div>
+        </div>
+        
+        <div id="ef-map" class="admin-map-picker" style="height:280px;background:#e8e8e8;border-radius:8px;position:relative;overflow:hidden;"></div>
+        <p class="form-hint" style="margin-top:0.5rem;font-size:0.8rem;color:var(--ink-3);">Click the map to set the ride start point. Drag the marker to adjust. Use search to jump to a location.</p>
+        
+        <div class="form-grid-2" style="margin-top:0.5rem;">
+          <div class="form-group">
+            <label for="ef-lat">Latitude</label>
+            <input id="ef-lat" type="text" readonly placeholder="Auto-filled from map" style="background:#f5f5f5;" />
+          </div>
+          <div class="form-group">
+            <label for="ef-lng">Longitude</label>
+            <input id="ef-lng" type="text" readonly placeholder="Auto-filled from map" style="background:#f5f5f5;" />
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:0.5rem;">
+          <label for="ef-address">Address (auto-detected via OpenStreetMap)</label>
+          <input id="ef-address" type="text" readonly placeholder="Click map to reverse-geocode" style="background:#f5f5f5;" />
+        </div>
+        
+        <!-- Map Actions -->
+        <div class="map-actions">
+          <button type="button" id="ef-open-osm" class="map-action-btn" title="Open in OpenStreetMap">🗺️ Open in OSM</button>
+          <button type="button" id="ef-open-gmaps" class="map-action-btn" title="Open in Google Maps">📍 Open in Google Maps</button>
+          <button type="button" id="ef-center-marker" class="map-action-btn" title="Center map on marker">🎯 Center on Marker</button>
+          <button type="button" id="ef-clear-location" class="map-action-btn" title="Clear location">✖ Clear Location</button>
+        </div>
+      </div>
+
       <p class="form-msg" id="ef-msg" aria-live="polite"></p>
       <div class="modal-actions">
         <button class="btn-outline btn-sm" id="ef-cancel" type="button">Cancel</button>
@@ -99,7 +178,280 @@
 </div>
 
 <div id="ph-toast" aria-live="polite"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
 <script>
+// ============================================================
+// Leaflet + OpenStreetMap Location Picker for Admin Events
+// ============================================================
+let efMap = null;
+let efMarker = null;
+let mapInitialized = false;
+let searchDebounce = null;
+
+// Default center: Manila, Philippines
+const DEFAULT_CENTER = [14.5995, 120.9842];
+const DEFAULT_ZOOM = 12;
+
+// Custom bike marker icon (SVG-based).
+// Built lazily: if the Leaflet CDN is unreachable, `L` is undefined and a
+// top-level L.divIcon() call would throw and take the whole page script with
+// it (no event list, no modal). Everything below degrades gracefully instead.
+let _bikeIcon = null;
+function bikeIcon() {
+  if (_bikeIcon) return _bikeIcon;
+  _bikeIcon = L.divIcon({
+    className: 'custom-bike-marker',
+    html: `<svg width="36" height="48" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 23 7 23s7-17.75 7-23c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#ff4d23"/>
+      <circle cx="12" cy="9" r="2.5" fill="white" opacity="0.9"/>
+    </svg>`,
+    iconSize: [36, 48],
+    iconAnchor: [18, 48],
+    popupAnchor: [0, -48]
+  });
+  return _bikeIcon;
+}
+
+// Initialize Leaflet map inside the modal
+function initEventMap() {
+  if (mapInitialized) return;
+
+  const mapDiv = document.getElementById('ef-map');
+  if (!mapDiv) return;
+
+  // Leaflet unavailable (offline / CDN blocked) — leave the rest of the page working
+  if (typeof L === 'undefined') {
+    mapDiv.innerHTML = '<p style="padding:1rem;font-size:0.8rem;color:#666;">Map unavailable — check your internet connection.</p>';
+    mapInitialized = true;
+    return;
+  }
+
+  // Create map
+  efMap = L.map('ef-map', {
+    center: DEFAULT_CENTER,
+    zoom: DEFAULT_ZOOM,
+    zoomControl: true,
+    attributionControl: true
+  });
+  
+  // Add OpenStreetMap tile layer
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(efMap);
+  
+  // Click to place/move marker
+  efMap.on('click', (e) => {
+    placeMarker(e.latlng);
+    reverseGeocode(e.latlng);
+  });
+  
+  // Fix map rendering when modal opens
+  setTimeout(() => efMap.invalidateSize(), 100);
+  
+  // Initialize place search
+  initPlaceSearch();
+  
+  // Initialize action buttons
+  initMapActions();
+  
+  mapInitialized = true;
+}
+
+// Place Search using Nominatim
+function initPlaceSearch() {
+  const input = document.getElementById('ef-place-search');
+  const results = document.getElementById('ef-place-results');
+  let selectedIndex = -1;
+  
+  input.addEventListener('input', () => {
+    clearTimeout(searchDebounce);
+    const query = input.value.trim();
+    if (query.length < 3) {
+      results.style.display = 'none';
+      return;
+    }
+    searchDebounce = setTimeout(() => searchPlaces(query), 300);
+  });
+  
+  input.addEventListener('focus', () => {
+    if (input.value.trim().length >= 3) {
+      results.style.display = 'block';
+    }
+  });
+  
+  document.addEventListener('click', (e) => {
+    if (!input.contains(e.target) && !results.contains(e.target)) {
+      results.style.display = 'none';
+    }
+  });
+  
+  input.addEventListener('keydown', (e) => {
+    const items = results.querySelectorAll('.map-search-result-item');
+    if (items.length === 0) return;
+    
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+      updateSelection(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      selectedIndex = Math.max(selectedIndex - 1, 0);
+      updateSelection(items);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (selectedIndex >= 0 && items[selectedIndex]) {
+        items[selectedIndex].click();
+      }
+    } else if (e.key === 'Escape') {
+      results.style.display = 'none';
+      selectedIndex = -1;
+    }
+  });
+  
+  function updateSelection(items) {
+    items.forEach((item, i) => {
+      item.classList.toggle('selected', i === selectedIndex);
+    });
+    if (items[selectedIndex]) {
+      items[selectedIndex].scrollIntoView({ block: 'nearest' });
+    }
+  }
+  
+  async function searchPlaces(query) {
+    results.innerHTML = '<div class="map-search-loading">Searching…</div>';
+    results.style.display = 'block';
+    selectedIndex = -1;
+    
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&countrycodes=ph`,
+        { headers: { 'Accept-Language': 'en' } }
+      );
+      const data = await response.json();
+      
+      if (data.length === 0) {
+        results.innerHTML = '<div class="map-search-result-item">No results found</div>';
+        return;
+      }
+      
+      results.innerHTML = data.map((place, i) => `
+        <div class="map-search-result-item" data-lat="${place.lat}" data-lon="${place.lon}" data-display="${place.display_name.replace(/"/g, '"')}" role="option">
+          <div class="place-name">${place.display_name.split(',')[0]}</div>
+          <div class="place-detail">${place.display_name.split(',').slice(1).join(', ')}</div>
+        </div>
+      `).join('');
+      
+      // Add click handlers
+      results.querySelectorAll('.map-search-result-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const lat = parseFloat(item.dataset.lat);
+          const lon = parseFloat(item.dataset.lon);
+          const display = item.dataset.display;
+          selectPlace(lat, lon, display);
+        });
+      });
+    } catch (err) {
+      console.warn('Place search failed:', err);
+      results.innerHTML = '<div class="map-search-result-item">Search failed. Try again.</div>';
+    }
+  }
+  
+  function selectPlace(lat, lon, displayName) {
+    const latlng = L.latLng(lat, lon);
+    placeMarker(latlng);
+    reverseGeocode(latlng);
+    input.value = displayName;
+    results.style.display = 'none';
+    selectedIndex = -1;
+    efMap.setView(latlng, 16);
+  }
+}
+
+// Map action buttons
+function initMapActions() {
+  document.getElementById('ef-open-osm')?.addEventListener('click', () => {
+    if (!efMarker) return toast('No location set');
+    const { lat, lng } = efMarker.getLatLng();
+    window.open(`https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=16/${lat}/${lng}`, '_blank');
+  });
+  
+  document.getElementById('ef-open-gmaps')?.addEventListener('click', () => {
+    if (!efMarker) return toast('No location set');
+    const { lat, lng } = efMarker.getLatLng();
+    window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`, '_blank');
+  });
+  
+  document.getElementById('ef-center-marker')?.addEventListener('click', () => {
+    if (!efMarker) return toast('No location set');
+    efMap.setView(efMarker.getLatLng(), 16);
+  });
+  
+  document.getElementById('ef-clear-location')?.addEventListener('click', () => {
+    if (efMarker) { efMarker.remove(); efMarker = null; }
+    ['ef-lat', 'ef-lng', 'ef-address', 'ef-place-search'].forEach(id => document.getElementById(id).value = '');
+    toast('Location cleared');
+  });
+}
+
+function placeMarker(latlng) {
+  if (!efMap) return;
+  const { lat, lng } = latlng;
+
+  if (efMarker) {
+    efMarker.setLatLng(latlng);
+  } else {
+    efMarker = L.marker(latlng, {
+      icon: bikeIcon(),
+      draggable: true,
+      title: 'Event Start Location'
+    }).addTo(efMap);
+    
+    // Update inputs when marker drag ends
+    efMarker.on('dragend', (e) => {
+      updateLatLngInputs(e.target.getLatLng());
+      reverseGeocode(e.target.getLatLng());
+    });
+  }
+  efMap.panTo(latlng);
+  updateLatLngInputs(latlng);
+}
+
+function updateLatLngInputs(latlng) {
+  document.getElementById('ef-lat').value = latlng.lat.toFixed(6);
+  document.getElementById('ef-lng').value = latlng.lng.toFixed(6);
+}
+
+// Reverse geocode using OpenStreetMap Nominatim (free, no key needed)
+async function reverseGeocode(latlng) {
+  const { lat, lng } = latlng;
+  const addrEl = document.getElementById('ef-address');
+  addrEl.value = 'Looking up address…';
+  
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+      { headers: { 'Accept-Language': 'en' } }
+    );
+    const data = await response.json();
+    
+    if (data.display_name) {
+      addrEl.value = data.display_name;
+    } else {
+      addrEl.value = 'Address not found';
+    }
+  } catch (err) {
+    console.warn('Reverse geocode failed:', err);
+    addrEl.value = 'Address lookup failed';
+  }
+}
+
+// ============================================================
+// Existing admin events logic (updated to include lat/lng/address)
+// ============================================================
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function toast(m){const t=document.getElementById('ph-toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
 function qs(s){return document.querySelector(s);}
@@ -107,12 +459,24 @@ function showMsg(el,type,text){if(!el)return;el.textContent=text;el.className='f
 
 let ALL_EVENTS=[];
 
+// Membership tiers, lowest to highest: Spoke (free) < Chain < Peloton
+const TIER_ORDER=['Spoke','Chain','Peloton'];
+function tierOf(v){return TIER_ORDER.indexOf(v)===-1?'Spoke':v;}
+function tierBadge(v){
+  const t=tierOf(v);
+  if(t==='Spoke')return '';
+  const cls=t==='Peloton'?'peloton':'chain';
+  const label=t==='Peloton'?'Peloton only':'Chain +';
+  return `<span class="tier-badge ${cls}" title="${t==='Peloton'?'Peloton members only':'Chain members and above only'}">${label}</span>`;
+}
+
 function render(){
   qs('#event-count').textContent=ALL_EVENTS.length;
   qs('#events-tbody').innerHTML=ALL_EVENTS.map(e=>{
     const pct=Math.min(100,Math.round((e.filled/e.capacity)*100));
+    const locBadge = (e.lat && e.lng) ? '<span class="loc-badge" title="Has location">&#128205;</span>' : '';
     return `<tr>
-      <td><div class="p-name">${esc(e.title)}</div><div class="p-sub">${esc(e.kicker)}${e.is_vip?' &middot; VIP':''}</div></td>
+      <td><div class="p-name">${esc(e.title)} ${locBadge}${tierBadge(e.min_tier)}</div><div class="p-sub">${esc(e.kicker)}${e.is_vip?' &middot; VIP':''}</div></td>
       <td>${esc(e.event_date)}</td>
       <td>${esc(e.dist)}</td>
       <td style="min-width:140px;"><div class="hbar-row" style="margin-bottom:0;">
@@ -133,15 +497,16 @@ function loadEvents(){
 }
 
 const modal=qs('#event-modal');
-function openModal(t){qs('#event-modal-title').textContent=t;modal.classList.add('open');}
+function openModal(t){qs('#event-modal-title').textContent=t;modal.classList.add('open'); initEventMap();}
 function closeModal(){modal.classList.remove('open');}
 qs('#event-modal-close').addEventListener('click',closeModal);
 qs('#ef-cancel').addEventListener('click',closeModal);
 modal.addEventListener('click',e=>{if(e.target===modal)closeModal();});
 
 function clearForm(){
-  ['ef-id','ef-title','ef-kicker','ef-date','ef-dist','ef-cap','ef-filled','ef-desc'].forEach(id=>qs('#'+id).value='');
-  qs('#ef-vip').value='0';qs('#ef-featured').value='0';
+  ['ef-id','ef-title','ef-kicker','ef-date','ef-dist','ef-cap','ef-filled','ef-desc','ef-lat','ef-lng','ef-address','ef-place-search'].forEach(id=>qs('#'+id).value='');
+  qs('#ef-vip').value='0';qs('#ef-featured').value='0';qs('#ef-min-tier').value='Spoke';
+  if (efMarker) { efMarker.remove(); efMarker = null; }
 }
 
 qs('#e-add-btn').addEventListener('click',()=>{clearForm();openModal('New Event');});
@@ -152,8 +517,18 @@ window.editEvent=function(id){
   qs('#ef-date').value=e.event_date;qs('#ef-dist').value=e.dist;
   qs('#ef-cap').value=e.capacity;qs('#ef-filled').value=e.filled;
   qs('#ef-vip').value=e.is_vip?'1':'0';qs('#ef-featured').value=e.featured?'1':'0';
+  qs('#ef-min-tier').value=tierOf(e.min_tier);
   qs('#ef-desc').value=e.description||'';
+  qs('#ef-lat').value=e.lat||'';qs('#ef-lng').value=e.lng||'';qs('#ef-address').value=e.address||'';
   openModal('Edit Event');
+  // Place marker after map initializes
+  setTimeout(() => {
+    if (e.lat && e.lng && efMap) {
+      const pos = [parseFloat(e.lat), parseFloat(e.lng)];
+      placeMarker(pos);
+      efMap.setView(pos, 15);
+    }
+  }, 300);
 };
 
 window.deleteEvent=function(id,title){
@@ -172,7 +547,13 @@ qs('#ef-save').addEventListener('click',()=>{
     event_date:qs('#ef-date').value,dist:qs('#ef-dist').value.trim(),
     capacity:parseInt(qs('#ef-cap').value)||50,filled:parseInt(qs('#ef-filled').value)||0,
     is_vip:qs('#ef-vip').value==='1'?1:0,featured:qs('#ef-featured').value==='1'?1:0,
-    description:qs('#ef-desc').value.trim()
+    description:qs('#ef-desc').value.trim(),
+    // Location fields
+    lat: qs('#ef-lat').value ? parseFloat(qs('#ef-lat').value) : null,
+    lng: qs('#ef-lng').value ? parseFloat(qs('#ef-lng').value) : null,
+    address: qs('#ef-address').value.trim() || null,
+    // Who may join: 'Spoke' = everyone, 'Chain' = Chain and up, 'Peloton' = Peloton only
+    min_tier: tierOf(qs('#ef-min-tier').value)
   };
   FB.apiAdminEventSave(payload)
     .then(d=>{

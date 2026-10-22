@@ -176,7 +176,7 @@ SIA LAST FINAL PROJECT/
 | `admins/{uid}` | Admin accounts |
 | `products` | Catalog products (soft-deleted with `deleted: true`) |
 | `products/{id}/reviews` | Product reviews |
-| `events` | Group rides and charity events |
+| `events` | Group rides and charity events — also carries the optional map location (`lat`, `lng`, `address`) |
 | `rsvps` | Customer ↔ event RSVPs |
 | `orders` | Customer reservations |
 | `orders/{id}/items` | Line items per order |
@@ -259,6 +259,44 @@ storefront HTML pages         admin HTML pages
 - Admin changes order status → order updated (cancelling restores stock)
 - Admin edits a product → catalog shows the new data on next page load
 - Admin saves tier discounts → `config/settings` — `membership.html` reads live values
+- Admin sets an event location → `lat` / `lng` / `address` on the `events` doc — `events.html` shows the map
+
+---
+
+## Event Locations (Leaflet + OpenStreetMap)
+
+Admins can drop a pin on the ride's start point when creating or editing an event.
+It is built on **Leaflet 1.9.4** with **OpenStreetMap** tiles, so **no API key and no
+billing account are needed** — the map, the place search and the address lookup all
+come from free OpenStreetMap services.
+
+**In the admin console** (`admin/events.html` → Events & RSVPs → *+ New Event*):
+
+| Control | What it does |
+|---------|--------------|
+| Search box | Type a place name (e.g. *Rizal Park*, *BGC Taguig*) and pick a result — the map jumps there |
+| Map | Click anywhere to drop the marker, or drag the marker to fine-tune it |
+| Latitude / Longitude | Filled in automatically (read-only) |
+| Address | Reverse-geocoded from the pin via Nominatim |
+| 🗺️ Open in OSM / 📍 Open in Google Maps | Opens the point in another map app |
+| 🎯 Center on Marker | Re-centres the map on the pin |
+| ✖ Clear Location | Removes the location entirely (the field is optional) |
+
+**What gets stored** on the `events` document — all three are optional:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `lat` | number \| null | Latitude of the start point |
+| `lng` | number \| null | Longitude of the start point |
+| `address` | string \| null | Human-readable address from reverse geocoding |
+
+**On the storefront** (`events.html`), events that have coordinates render a small
+read-only map with a marker, the address and buttons for OSM / Google Maps
+directions. Events without coordinates simply show no map.
+
+**Services used** (all keyless): tiles from `tile.openstreetmap.org`, search and
+reverse geocoding from `nominatim.openstreetmap.org`. Nominatim asks for no more
+than ~1 request per second, so the search box debounces as you type.
 
 ---
 
@@ -285,6 +323,9 @@ member tier discount is applied — they do not stack.
 | Admin login says "Invalid credentials" | Make sure the seed ran, or that an `admins/{uid}` document exists for that account |
 | Catalog shows no products | The seed script hasn't been run against this Firebase project |
 | Uploaded product images look small | Without Firebase Storage, uploads are resized to 800px and stored inside the product document |
+| Event map is blank / grey | The map needs internet access — Leaflet and the OpenStreetMap tiles are loaded from a CDN. Check the network tab for blocked requests |
+| Event map says "Map unavailable" | The Leaflet CDN was blocked; the rest of the admin page still works, but no pin can be placed until the network allows `unpkg.com` |
+| Place search returns nothing | Nominatim only matches places it knows about — try a broader name ("Rizal Park" rather than "Rizal Park North Entrance") |
 
 ## Payments (MongoDB + PayMongo)
 

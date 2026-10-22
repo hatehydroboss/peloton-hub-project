@@ -11,6 +11,25 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
     }
 
+    // ── MEMBERSHIP TIERS ──────────────────────────────────────
+    // Spoke (free) < Chain < Peloton. An event's `min_tier` is the lowest
+    // tier allowed to join it. Ranking lets us compare two tiers with a
+    // single numeric comparison.
+    function tierRank(t) {
+      return t == 'Peloton' ? 3 : (t == 'Chain' ? 2 : 1);
+    }
+    // True when the signed-in member's tier is at or above the event's gate.
+    // Admins bypass it — an admin account has no customer profile document.
+    // NOTE: the rules language has no `if`, only expressions.
+    function tierAllowed(eventId) {
+      let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      let eventPath = /databases/$(database)/documents/events/$(eventId);
+      return isAdmin()
+        || (exists(userPath) && exists(eventPath)
+            && tierRank(get(userPath).data.get('tier', 'Spoke'))
+               >= tierRank(get(eventPath).data.get('min_tier', 'Spoke')));
+    }
+
     // Admin accounts: an admin reads their own record; records are managed in the Firebase Console only
     match /admins/{uid} {
       allow read: if signedIn() && request.auth.uid == uid;
@@ -56,7 +75,9 @@ service cloud.firestore {
     match /rsvps/{id} {
       allow read: if isAdmin()
         || (signedIn() && (resource == null || resource.data.user_id == request.auth.uid));
-      allow create: if signedIn() && request.resource.data.user_id == request.auth.uid;
+      // A member can only RSVP to an event whose tier gate they clear.
+      allow create: if signedIn() && request.resource.data.user_id == request.auth.uid
+        && tierAllowed(request.resource.data.event_id);
       allow delete: if signedIn() && resource.data.user_id == request.auth.uid;
     }
 

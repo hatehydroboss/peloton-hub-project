@@ -587,6 +587,42 @@ export async function apiCartClear() {
 
 const TIER_DISCOUNTS = { Spoke: 5, Chain: 10, Peloton: 20 };
 
+// ── MEMBERSHIP TIERS ───────────────────────────────────────────
+// Spoke (free) < Chain < Peloton. `min_tier` on an event is the lowest tier
+// allowed to join it: 'Spoke' = everyone, 'Chain' = Chain and up,
+// 'Peloton' = Peloton only.
+export const TIERS = ['Spoke', 'Chain', 'Peloton'];
+
+/** Numeric rank of a tier — higher means a more exclusive tier. */
+export function tierRank(tier) {
+  const i = TIERS.indexOf(tier);
+  return i === -1 ? 0 : i;
+}
+
+/** True when `tier` is at or above `minTier` (unknown tiers count as Spoke). */
+export function tierAtLeast(tier, minTier) {
+  return tierRank(tier) >= tierRank(minTier || 'Spoke');
+}
+
+/** Normalise a tier coming from a form or an old document. */
+export function normaliseTier(tier) {
+  return TIERS.includes(tier) ? tier : 'Spoke';
+}
+
+/** Human label for an event's tier gate. */
+export function tierGateLabel(minTier) {
+  const t = normaliseTier(minTier);
+  if (t === 'Peloton') return 'Peloton members only';
+  if (t === 'Chain')    return 'Chain & Peloton members only';
+  return 'Open to all members';
+}
+
+/** The event's tier gate as a tier list, e.g. ['Spoke','Chain','Peloton']. */
+export function allowedTiers(minTier) {
+  const from = tierRank(minTier);
+  return TIERS.filter((_, i) => i >= from);
+}
+
 /**
  * Stock change inside a transaction. Firestore requires every read in a
  * transaction to happen before any write, so this reads all the products
@@ -816,23 +852,35 @@ export async function apiEventsGet() {
       filled:      d.data().filled      || 0,
       is_vip:      d.data().is_vip      ? 1 : 0,
       featured:    d.data().featured    ? 1 : 0,
+      // Map location (optional — set from the admin map picker)
+      lat:         d.data().lat         ?? null,
+      lng:         d.data().lng         ?? null,
+      address:     d.data().address     || '',
+      // Tier gate: the lowest membership tier allowed to join
+      min_tier:    normaliseTier(d.data().min_tier),
     }));
 
     let myRsvps = [];
+    let myTier  = null;
     const u = auth.currentUser;
     if (u) {
-      const rsvpSnap = await getDocs(
-        query(collection(db, 'rsvps'), where('user_id', '==', u.uid))
-      );
+      const [rsvpSnap, meSnap] = await Promise.all([
+        getDocs(query(collection(db, 'rsvps'), where('user_id', '==', u.uid))),
+        getDoc(doc(db, 'users', u.uid)),
+      ]);
       myRsvps = rsvpSnap.docs.map(d => d.data().event_id);
+      myTier  = normaliseTier(meSnap.exists() ? meSnap.data().tier : 'Spoke');
     }
 
     events.forEach(ev => {
       ev.rsvpd      = myRsvps.includes(ev.id);
       ev.spots_left = Math.max(0, ev.capacity - ev.filled);
+      // Tier gate — can this member join? null tier = signed out.
+      ev.user_tier  = myTier;
+      ev.can_join   = myTier === null ? false : tierAtLeast(myTier, ev.min_tier);
     });
 
-    return { ok: true, events, my_rsvps: myRsvps };
+    return { ok: true, events, my_rsvps: myRsvps, my_tier: myTier };
   } catch (e) {
     return { ok: false, error: e.message };
   }
@@ -867,7 +915,20 @@ export async function apiEventRsvp({ event_id }) {
       });
       return { ok: true, rsvpd: false };
     } else {
-      // Add RSVP — check capacity
+      // Add RSVP — check the tier gate and capacity
+      const meSnap = await getDoc(doc(db, 'users', u.uid));
+      const myTier = normaliseTier(meSnap.exists() ? meSnap.data().tier : 'Spoke');
+      const minTier = normaliseTier(eventSnap.data().min_tier);
+
+      if (!tierAtLeast(myTier, minTier)) {
+        return {
+          ok: false,
+          error: minTier === 'Peloton'
+            ? 'This event is exclusive to Peloton members.'
+            : 'This event is for Chain members and above.',
+        };
+      }
+
       const full = await runTransaction(db, async (tx) => {
         const ev = (await tx.get(eventRef)).data();
         if ((ev.filled || 0) >= ev.capacity) return true;
@@ -1593,7 +1654,8 @@ export async function apiAdminEventSave(data) {
     if (!admin) return { ok: false, error: 'Unauthorised' };
 
     const { id, title, kicker, dist = '', event_date, description = '',
-            capacity = 50, filled = 0, is_vip = false, featured = false } = data;
+            capacity = 50, filled = 0, is_vip = false, featured = false,
+            lat = null, lng = null, address = null, min_tier = 'Spoke' } = data;
 
     if (!title || !kicker || !event_date)
       return { ok: false, error: 'Title, kicker and date are required' };
@@ -1605,6 +1667,12 @@ export async function apiAdminEventSave(data) {
       is_vip:   Boolean(is_vip),
       featured: Boolean(featured),
       deleted:  false,
+      // Location fields (optional)
+      lat: lat !== null && lat !== '' ? Number(lat) : null,
+      lng: lng !== null && lng !== '' ? Number(lng) : null,
+      address: address || null,
+      // Who may join: 'Spoke' = everyone, 'Chain' = Chain and up, 'Peloton' = Peloton only
+      min_tier: normaliseTier(min_tier)
     };
 
     if (id) {
