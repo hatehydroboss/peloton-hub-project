@@ -53,7 +53,11 @@ const firebaseConfig = {
   measurementId: "G-95FQPBRK6E"
 };
 
-const app  = initializeApp(firebaseConfig);
+// The admin console (/admin/ pages) uses its own named app. Firebase keeps one
+// sign-in per app, so this lets a customer and an admin stay signed in on the
+// same browser at the same time without logging each other out.
+const IS_ADMIN_CONSOLE = /\/admin\//.test(location.pathname);
+const app  = IS_ADMIN_CONSOLE ? initializeApp(firebaseConfig, 'admin') : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 
