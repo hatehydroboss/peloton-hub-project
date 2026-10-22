@@ -77,7 +77,9 @@ async function check(tries) {
     $('pr-sub').textContent = 'Thank you! A copy is saved to your account.';
     $('pr-ico').hidden = false;
     $('pr-msg').textContent = p.type === 'membership'
-      ? 'Your membership payment is received. The shop will switch on your new tier shortly.'
+      ? (p.metadata?.activated
+          ? `Your ${p.metadata.tier} membership is now active. Your new member discount applies to your next reservation.`
+          : 'Your membership payment is received. The shop will switch on your new tier shortly.')
       : 'Your reservation is paid. Show your Reservation ID at the counter to pick up your items within 48 hours.';
     show(p);
     actions(p.type === 'membership'

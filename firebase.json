@@ -19,7 +19,10 @@
       "fix_mem_module.js",
       "replace_mem_modaljs.js",
       "firestore.rules",
-      "render.yaml"
+      "render.yaml",
+      "**/*-firebase-adminsdk-*.json",
+      "**/serviceAccount*.json",
+      "**/service-account*.json"
     ],
     "headers": [
       {

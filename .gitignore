@@ -10,3 +10,8 @@ desktop.ini
 .env
 .env.*
 !.env.example
+
+# Firebase service-account keys (paste into Render, never commit)
+*-firebase-adminsdk-*.json
+serviceAccount*.json
+service-account*.json

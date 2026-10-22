@@ -20,6 +20,7 @@ Security:
 - Listing, marking paid and refunding are **admin-only** (`ADMIN_UIDS`).
 - The webhook is accepted only with a valid **PayMongo signature** (`PAYMONGO_WEBHOOK_SECRET`).
 - PayMongo may only send customers back to the addresses in `APP_URLS`.
+- A **paid membership switches the tier on automatically** (after PayMongo, or when an admin marks a cash membership paid). The server writes the new tier to `users/{uid}` with a Firebase service account (`FIREBASE_SERVICE_ACCOUNT`); customers still can't change their own tier. It never lowers a tier. Without the variable, an admin switches tiers on by hand.
 
 ## Endpoints
 
@@ -57,6 +58,10 @@ automatically; the live website and the app use the hosted one.
 4. **Webhook (optional, recommended)** — PayMongo → Developers → Webhooks → add
    `https://<your-render-url>/api/paymongo/webhook` for `checkout_session.payment.paid`, then put
    its secret (`whsk_…`) in Render as `PAYMONGO_WEBHOOK_SECRET`.
+
+5. **Automatic membership activation** — Firebase console → Project settings → Service accounts →
+   **Generate new private key**. Open the downloaded JSON, copy all of it, and add it on Render as
+   `FIREBASE_SERVICE_ACCOUNT` (Environment → Add variable). Keep the file private and never commit it.
 
 If the Render address isn't `https://pelotonhub-payments.onrender.com`, update `PRODUCTION_API`
 in `js/mongo-payment.js`.

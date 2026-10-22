@@ -1,6 +1,7 @@
 const { Payment, PAYMENT_STATUSES } = require('../models/Payment');
 const { getOrder, MEMBERSHIP_PRICE } = require('../services/orders');
 const paymongo = require('../services/paymongo');
+const { activateMembership } = require('../services/firestoreAdmin');
 
 function toDTO(p) {
   return {
@@ -74,8 +75,9 @@ async function createPayment(req, res, next) {
     const payment = await Payment.create({
       orderId: charge.orderId, userId: charge.userId, type: charge.type, amount: charge.amount,
       method: req.body.method === 'cash' ? 'cash' : 'pay_at_pickup', status,
-      provider: 'pelotonhub', metadata: { ...charge.metadata, ...(req.body.metadata || {}) },
+      provider: 'pelotonhub', metadata: { ...(req.body.metadata || {}), ...charge.metadata, activated: false },   // server's tier wins
     });
+    await activateIfMembership(payment);   // admin recorded a cash membership as already paid
     return res.status(201).json({ ok: true, payment: toDTO(payment) });
   } catch (err) { next(err); }
 }
@@ -123,8 +125,22 @@ async function createCheckout(req, res, next) {
   } catch (err) { next(err); }
 }
 
+// A paid membership switches the customer's tier on (once). A failure is kept on the
+// payment and retried on the next check, and an admin can still switch it on by hand.
+async function activateIfMembership(payment) {
+  if (payment.type !== 'membership' || payment.status !== 'paid' || payment.metadata?.activated) return payment;
+  let result;
+  try { result = await activateMembership(payment.userId, payment.metadata?.tier, payment.paymentId); }
+  catch (err) { result = { ok: false, error: err.message }; }
+  if (!result.ok) console.error('[membership]', payment.paymentId, result.error);
+  payment.metadata = { ...payment.metadata, activated: result.ok, activationError: result.ok ? null : result.error };
+  payment.markModified('metadata');
+  await payment.save();
+  return payment;
+}
+
 async function markPaidFromSession(payment) {
-  if (payment.status !== 'pending' || !payment.checkoutSessionId) return payment;
+  if (payment.status !== 'pending' || !payment.checkoutSessionId) return activateIfMembership(payment);
   const s = await paymongo.getCheckoutSession(payment.checkoutSessionId);
   if (s.paid) {
     payment.status = 'paid';
@@ -132,7 +148,7 @@ async function markPaidFromSession(payment) {
     if (['gcash', 'paymaya', 'card', 'grab_pay', 'qrph'].includes(s.sourceType)) payment.method = s.sourceType;
     await payment.save();
   }
-  return payment;
+  return activateIfMembership(payment);
 }
 
 async function findOwned(req, res) {
@@ -215,6 +231,7 @@ async function updatePayment(req, res, next) {
     }
     if (transactionRef !== undefined) payment.transactionRef = transactionRef;
     await payment.save();
+    await activateIfMembership(payment);   // cash membership received at the counter
     return res.json({ ok: true, payment: toDTO(payment) });
   } catch (err) { next(err); }
 }

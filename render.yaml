@@ -18,6 +18,9 @@ services:
         sync: false
       - key: PAYMONGO_WEBHOOK_SECRET
         sync: false
+      # Firebase service-account JSON (one line): lets the server switch on a paid membership tier
+      - key: FIREBASE_SERVICE_ACCOUNT
+        sync: false
       - key: ADMIN_UIDS
         value: ZqjawJwtSOd9acDJNtNq1ZMnGZ83
       - key: FIREBASE_PROJECT_ID
