@@ -67,7 +67,7 @@
       <!-- STEP 2: Pickup details -->
       <div id="panel-2" class="checkout-panel panel" style="margin-top:2rem;" hidden>
         <p class="panel-head" style="border:none;margin-bottom:1.5rem;"><span>In-Store Pickup Details</span></p>
-        <p style="color:var(--ink-2);font-size:0.85rem;margin-bottom:1.5rem;line-height:1.7;">All reservations are fulfilled in-store. Payment is processed at the branch upon pickup. Items are held for 48 hours.</p>
+        <p style="color:var(--ink-2);font-size:0.85rem;margin-bottom:1.5rem;line-height:1.7;">All reservations are picked up in-store. Pay online now, or pay at the counter when you pick up. Items are held for 48 hours.</p>
         <div class="form-row">
           <div class="form-group"><label for="pickup-date">Preferred Pickup Date</label><input id="pickup-date" type="date" /></div>
           <div class="form-group">
@@ -80,10 +80,25 @@
           </div>
         </div>
         <div class="form-group"><label for="pickup-notes">Special Instructions (optional)</label><textarea id="pickup-notes" rows="3" placeholder="e.g., Please install the tires before pickup&hellip;"></textarea></div>
-        <div class="form-group"><label>Payment Method</label><div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:0.3rem;"><label style="display:flex;align-items:center;gap:0.4rem;"><input type="radio" name="payment-method" value="cash" checked /> Cash on Pickup (Pay in Store)</label><label style="display:flex;align-items:center;gap:0.4rem;"><input type="radio" name="payment-method" value="online" /> Pay Online (QRPh, GCash, Maya, Card)</label></div>
-           <div id="online-payment-fields" hidden style="margin-top:0.8rem;padding:0.8rem 1rem;border:1px solid var(--line);border-radius:var(--radius);font-size:0.8rem;color:var(--ink-2);line-height:1.6;">
-             After you confirm, you&rsquo;ll go to <strong>PayMongo</strong>&rsquo;s secure checkout to pay with QRPh, GCash, Maya, GrabPay or a card, then come back here. Your card details never touch PelotonHub.
-           </div></div>
+        <fieldset class="pay-options">
+          <legend class="pay-legend">Payment Method</legend>
+          <div class="pay-opts">
+            <label class="pay-opt is-checked">
+              <input type="radio" name="payment-method" value="cash" checked />
+              <span class="pay-opt-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 9 5 4h14l1.5 5M3.5 9h17M4.5 9v11h15V9M9.5 20v-6h5v6"/></svg></span>
+              <span class="pay-opt-text"><strong>Pay at pickup</strong><small>Cash at the shop counter</small></span>
+            </label>
+            <label class="pay-opt">
+              <input type="radio" name="payment-method" value="online" />
+              <span class="pay-opt-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18h3"/></svg></span>
+              <span class="pay-opt-text"><strong>Pay online now</strong><small>QRPh &middot; GCash &middot; Maya &middot; GrabPay &middot; Card</small></span>
+            </label>
+          </div>
+          <p class="pay-note" id="online-payment-fields" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9.5" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+            <span>After you confirm, you&rsquo;ll pay on <strong>PayMongo</strong>&rsquo;s secure checkout, then come back here. Your card details never touch PelotonHub.</span>
+          </p>
+        </fieldset>
         <p class="form-msg" id="pickup-msg" aria-live="polite"></p>
         <button class="btn-primary" id="confirm-btn" type="button" style="padding:0.8rem 2rem;margin-top:.6rem;">Confirm Reservation <svg class="picon arrow" aria-hidden="true"><use href="img/icons.svg#i-arrow-right"/></svg></button>
         <button class="pickup-back" id="pickup-back-btn" type="button"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-arrow-left"/></svg> Back to cart</button>
@@ -110,7 +125,7 @@
         <p id="cart-upsell-note" style="display:none;font-size:0.78rem;color:var(--ink-2);margin-top:0.8rem;"></p>
         <div id="proceed-wrap">
         <button class="btn-primary" id="proceed-btn" type="button" style="width:100%;margin-top:1.2rem;padding:1rem;">Proceed to Reservation <svg class="picon arrow" aria-hidden="true"><use href="img/icons.svg#i-arrow-right"/></svg></button>
-        <p style="text-align:center;margin-top:0.8rem;font-size:0.72rem;color:var(--ink-3);letter-spacing:0.04em;">Payment processed in-store at pickup</p>
+        <p style="text-align:center;margin-top:0.8rem;font-size:0.72rem;color:var(--ink-3);letter-spacing:0.04em;">Pay online or in-store at pickup</p>
         </div>
       </div>
       <div class="promo-box">
@@ -340,6 +355,7 @@ function togglePaymentFields(){
   const m = document.querySelector('input[name="payment-method"]:checked')?.value;
   const f = document.getElementById('online-payment-fields');
   if (f) f.hidden = (m !== 'online');
+  document.querySelectorAll('.pay-opt').forEach(o=>o.classList.toggle('is-checked', o.querySelector('input').checked));
 }
 document.querySelectorAll('input[name="payment-method"]').forEach(r=>r.addEventListener('change',togglePaymentFields));
 togglePaymentFields();

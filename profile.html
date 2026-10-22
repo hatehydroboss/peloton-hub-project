@@ -200,7 +200,7 @@ const stopGate = onAuthStateChanged(auth, async (firebaseUser) => {
     if (td && v != null) td.textContent = v + '%';
   });
   const tt  = qs('#tier-tuneups-stat');  if (tt) tt.textContent      = TIER_SERVICE[user.tier] ?? '0';
-  const tm  = qs('#tier-meta');  if (tm) tm.textContent = user.tier === 'Spoke' ? 'Free membership' : `${user.tier === 'Chain' ? '₱499' : '₱999'}/month · billed in-store`;
+  const tm  = qs('#tier-meta');  if (tm) tm.textContent = user.tier === 'Spoke' ? 'Free membership' : `${user.tier === 'Chain' ? '₱499' : '₱999'}/month`;
   const mid = qs('#member-id');  if (mid) mid.textContent = 'PH-' + user.id.slice(0, 6).toUpperCase();
   const up  = qs('#tier-upgrade-btn'); if (up && user.tier === 'Peloton') up.textContent = 'View tiers';
   apiOrdersGet().then(r => { const to = qs('#tier-orders-stat'); if (to && r.ok) to.textContent = r.orders.filter(o => o.status !== 'cancelled').length; });

@@ -140,7 +140,7 @@ window.phHandleBack = function () {
   if (filter) { qs('#filter-backdrop')?.click(); return 'handled'; }
   const dropdown = qs('.fsel.open');
   if (dropdown) { dropdown.querySelector('.fsel-btn').click(); return 'handled'; }
-  if (qs('.si-overlay.open')) {
+  if (qs('.si-overlay.open') || qs('.modal-overlay.open')) {   // sign-in sheet or a page dialog (they close on Escape)
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     return 'handled';
   }
@@ -538,7 +538,9 @@ async function getUser() {
 // ── MEMBERSHIP TIER CARDS (home + membership page) ──
 // Live discount % from Admin → Membership Tiers, and buttons that make sense
 // for who is looking: signed out → create an account; signed in → current
-// tier is marked, other tiers ask the shop for an upgrade (paid in-store).
+// tier is marked, higher tiers open the upgrade payment on membership.html,
+// lower tiers ask the shop through Support (nothing to pay).
+const TIER_RANK = { Spoke: 0, Chain: 1, Peloton: 2 };
 async function initTierCards() {
   const cards = qsa('[data-tier-card]');
   const discEls = qsa('[data-disc]');
@@ -562,9 +564,12 @@ async function initTierCards() {
       btn.classList.add('is-current');
       btn.querySelector('button').textContent = '✓ Your current tier';
       btn.querySelector('button').disabled = true;
+    } else if (TIER_RANK[tier] > (TIER_RANK[user.tier] ?? 0)) {
+      btn.href = `membership.html?upgrade=${tier}`;
+      btn.querySelector('button').textContent = `Upgrade to ${tier}`;
     } else {
       btn.href = `support.html?topic=Membership&tier=${tier}`;
-      btn.querySelector('button').textContent = tier === 'Spoke' ? 'Switch to Spoke' : `Request ${tier} upgrade`;
+      btn.querySelector('button').textContent = `Switch to ${tier}`;
     }
   });
 }

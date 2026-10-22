@@ -86,7 +86,7 @@
     </div>
     <div class="help-card">
       <span class="help-ico"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-trophy"/></svg></span>
-      <div><strong>Membership upgrades</strong><p>Chain and Peloton are activated and billed in-store. Compare tiers on the <a href="membership.html">Membership</a> page.</p></div>
+      <div><strong>Membership upgrades</strong><p>Upgrade to Chain or Peloton on the <a href="membership.html">Membership</a> page &mdash; pay online or at the shop counter.</p></div>
     </div>
     <div class="help-card">
       <span class="help-ico"><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-calendar"/></svg></span>
@@ -136,13 +136,13 @@ import { apiSupportSubmit } from './js/firebase.js';
 
 function showMsg(el,type,text){if(!el)return;el.textContent=text;el.className='form-msg show '+type;clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),6000);}
 
-// Arrived from a tier card ("Request upgrade"): pre-fill topic and message
+// Arrived from a tier card ("Switch to <lower tier>"): pre-fill topic and message
 {
   const q = new URLSearchParams(location.search);
   const topic = q.get('topic'), tier = q.get('tier');
   if (topic) { const sel = document.getElementById('s-topic'); if ([...sel.options].some(o => o.value === topic || o.text === topic)) sel.value = topic; }
   if (tier && ['Spoke','Chain','Peloton'].includes(tier))
-    document.getElementById('s-message').value = `Hi! I'd like to switch my membership to ${tier}. When can I activate it at the shop?`;
+    document.getElementById('s-message').value = `Hi! I'd like to switch my membership down to ${tier}. Please change it on my account.`;
 }
 
 // Pre-fill name/email for signed-in members, and keep the form closed to guests

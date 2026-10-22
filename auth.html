@@ -52,7 +52,7 @@
       <div class="form-group"><label for="reg-confirm">Confirm Password</label><span class="si-pass"><input id="reg-confirm" type="password" autocomplete="new-password" /><button type="button" class="si-eye" data-eye="reg-confirm" aria-label="Show password">Show</button></span></div>
       <div class="tier-note" id="tier-note">
         <strong><svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-trophy"/></svg> You&rsquo;ll start on Spoke &mdash; free.</strong>
-        <span id="tier-note-extra">Want Chain or Peloton? Ask at the shop counter after you sign up; paid tiers are billed in-store.</span>
+        <span id="tier-note-extra">Want Chain or Peloton? After you sign up, upgrade from the Membership page &mdash; pay online or at the shop counter.</span>
       </div>
       <label class="terms-check" style="display:flex;align-items:flex-start;gap:0.6rem;font-size:0.82rem;line-height:1.5;margin-bottom:1rem;cursor:pointer;">
         <input type="checkbox" id="reg-terms" style="accent-color:var(--accent);width:18px;height:18px;flex-shrink:0;margin-top:1px;" />
@@ -84,7 +84,7 @@ getUser().then(u => { if (u) location.replace(next || 'home.html'); else ready()
 // Came from a paid tier card: explain how to get it
 const qTier = new URLSearchParams(location.search).get('tier');
 if (['Chain','Peloton'].includes(qTier)) document.getElementById('tier-note-extra').textContent =
-  `After you sign up, ask at the shop counter to switch to ${qTier} (${qTier==='Chain'?'₱499':'₱999'}/month, billed in-store) — your discount starts as soon as it's activated.`;
+  `After you sign up, upgrade to ${qTier} (${qTier==='Chain'?'₱499':'₱999'}/month) from the Membership page — pay online or at the shop counter. Your discount starts once the payment is confirmed.`;
 
 // Show / Hide on the password boxes (same as the sign-in window)
 document.querySelectorAll('[data-eye]').forEach(eye=>eye.addEventListener('click',()=>{
