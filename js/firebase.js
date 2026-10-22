@@ -1186,7 +1186,8 @@ export async function apiAdminDashboard({ onlyOrderIds = null } = {}) {
     const since  = days => new Date(Date.now() - days * 24 * 3600 * 1000);
 
     const revenue        = live.filter(o => o._ts && o._ts >= since(30)).reduce((s, o) => s + (o.total || 0), 0);
-    const pending        = orders.filter(o => o.status === 'reserved').length;
+    // Open = not yet picked up or cancelled (reserved, preparing, awaiting pickup)
+    const pending        = orders.filter(o => ['reserved', 'preparing', 'awaiting_pickup'].includes(o.status)).length;
     const active_members = membersSnap.size;
     const low_stock      = productsSnap.docs.filter(d => {
       const p = d.data();

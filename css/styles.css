@@ -644,6 +644,8 @@ td.num, th.num { font-family: var(--font-mono); }
 .status-pill.completed { background: var(--success); color: var(--white); border-color: var(--success); }
 .status-pill.pending { background: transparent; color: var(--ink-2); border-color: var(--line-strong); }
 .status-pill.reserved { background: var(--surface); color: var(--black); border-color: var(--line); }
+.status-pill.preparing { background: var(--white); color: var(--accent); border-color: var(--accent); }
+.status-pill.awaiting_pickup { background: var(--black); color: var(--white); border-color: var(--black); }
 .status-pill.cancelled { background: transparent; color: var(--ink-3); border-color: var(--line); text-decoration: line-through; }
 
 /* ===== PROGRESS ===== */

@@ -88,9 +88,15 @@
       <p style="font-size:0.85rem;margin-bottom:0.3rem;">Discount: <strong id="om-discount"></strong></p>
       <p style="font-size:0.85rem;margin-bottom:0.3rem;">Payment: <strong id="om-payment"></strong></p>
       <p style="font-size:1rem;margin-bottom:1.4rem;">Total: <strong id="om-total" class="mono"></strong></p>
-      <div class="modal-actions">
-        <button class="btn-outline btn-sm" id="om-cancel-btn" type="button">Cancel Order</button>
-        <button class="btn-primary btn-sm" id="om-complete-btn" type="button">Mark Completed</button>
+
+      <!-- Order progress: Reserved → Preparing → Awaiting Pickup → Completed -->
+      <p class="om-flow-label">Order Status</p>
+      <ol class="om-flow" id="om-flow"></ol>
+      <p class="om-flow-note" id="om-flow-note"></p>
+      <div class="modal-actions om-actions">
+        <button class="om-back-btn" id="om-back-btn" type="button" hidden></button>
+        <button class="btn-danger-outline btn-sm" id="om-cancel-btn" type="button">Cancel Order</button>
+        <button class="btn-primary btn-sm" id="om-next-btn" type="button"></button>
       </div>
     </div>
   </div>
@@ -170,23 +176,70 @@ window.openOrder=function(id){
     qs('#om-discount').textContent=o.discount_pct?o.discount_pct+'%':'None';
     qs('#om-payment').innerHTML=payText(o);
     qs('#om-total').textContent=peso(o.total);
-    const canAct=o.status==='reserved';
-    qs('#om-cancel-btn').disabled=!canAct;qs('#om-complete-btn').disabled=!canAct;
-    qs('#om-cancel-btn').style.opacity=canAct?1:0.4;qs('#om-complete-btn').style.opacity=canAct?1:0.4;
+    renderFlow(o.status);
     modal.classList.add('open');
   });
 };
 
+// ── Order progress ──
+// Each open order moves one step at a time. Cancelling is possible until the
+// customer has picked it up; a step taken by mistake can be undone.
+const FLOW=['reserved','preparing','awaiting_pickup','completed'];
+const NEXT={
+  reserved:        {to:'preparing',       label:'Start Preparing'},
+  preparing:       {to:'awaiting_pickup', label:'Ready for Pickup'},
+  awaiting_pickup: {to:'completed',       label:'Mark Picked Up'},
+};
+const NOTE={
+  reserved:        'Customer has reserved the items. Start preparing when you begin picking the order.',
+  preparing:       'Items are being prepared. Mark it ready once the order is packed at the counter.',
+  awaiting_pickup: 'Order is packed and waiting at the store. Mark it picked up when the customer collects it.',
+  completed:       'Picked up by the customer. This order is closed.',
+  cancelled:       'This order was cancelled and its stock was returned. It is closed.',
+};
+let activeStatus=null;
+function renderFlow(status){
+  activeStatus=status;
+  const at=FLOW.indexOf(status);   // -1 when cancelled
+  const done=i=>i<at||status==='completed';
+  qs('#om-flow').className='om-flow'+(status==='cancelled'?' is-cancelled':'');
+  qs('#om-flow').innerHTML=FLOW.map((s,i)=>
+    `<li class="${done(i)?'done':i===at?'current':''}"><span class="om-dot">${done(i)?'&#10003;':i+1}</span><span class="om-step">${cap(s)}</span></li>`).join('');
+  qs('#om-flow-note').textContent=NOTE[status]||'';
+  // The buttons' own display rules beat the [hidden] attribute, so set display directly
+  const show=(el,on)=>{el.style.display=on?'':'none';};
+  const next=NEXT[status];
+  show(qs('#om-next-btn'),!!next);
+  show(qs('#om-cancel-btn'),!!next);
+  if(next) qs('#om-next-btn').textContent=next.label;
+  const prev=at>0&&status!=='completed'?FLOW[at-1]:null;
+  qs('#om-back-btn').hidden=false;
+  show(qs('#om-back-btn'),!!prev);
+  if(prev) qs('#om-back-btn').innerHTML='&larr; Back to '+cap(prev);
+  qs('#om-back-btn').dataset.to=prev||'';
+}
+
 qs('#order-modal-close').addEventListener('click',()=>modal.classList.remove('open'));
 modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('open');});
 
+// Keeps the popup open on the new step, so the admin sees the change and can move on or undo it
 function setStatus(status){
   if(!activeOrderId)return;
+  const btns=[...document.querySelectorAll('.om-actions button')];
+  btns.forEach(b=>b.disabled=true);
   FB.apiAdminOrderStatus({id:activeOrderId,status})
-    .then(d=>{if(d.ok){toast('Order updated');modal.classList.remove('open');loadOrders();}else alert(d.error);});
+    .then(d=>{
+      btns.forEach(b=>b.disabled=false);
+      if(!d.ok){alert(d.error);return;}
+      toast('Order marked '+cap(status));
+      renderFlow(status);
+      const o=ALL_ORDERS.find(x=>x.id===activeOrderId);
+      if(o){o.status=status;render();}
+    });
 }
-qs('#om-cancel-btn').addEventListener('click',()=>{if(confirm('Cancel this order?'))setStatus('cancelled');});
-qs('#om-complete-btn').addEventListener('click',()=>setStatus('completed'));
+qs('#om-next-btn').addEventListener('click',()=>{const n=NEXT[activeStatus];if(n)setStatus(n.to);});
+qs('#om-back-btn').addEventListener('click',e=>{const to=e.currentTarget.dataset.to;if(to)setStatus(to);});
+qs('#om-cancel-btn').addEventListener('click',()=>{if(confirm('Cancel this order? Its items go back into stock.'))setStatus('cancelled');});
 
 document.addEventListener('admin-ready',()=>{
   const toggle=document.getElementById('admin-sidebar-toggle');

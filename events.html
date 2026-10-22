@@ -17,12 +17,43 @@
   <!-- Leaflet CSS for storefront event maps -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   <style>
-    /* Directions button for storefront maps */
-    .ev-map-actions { display: flex; gap: 0.4rem; margin: 0.5rem 0.75rem; flex-wrap: wrap; }
-    .ev-map-btn { padding: 0.35rem 0.6rem; border: 1px solid var(--line); border-radius: 6px; background: white; font-size: 0.7rem; cursor: pointer; text-decoration: none; color: var(--ink); transition: all 0.15s; white-space: nowrap; }
-    .ev-map-btn:hover { background: #f5f5f5; }
-    .ev-map-btn.primary { background: var(--brand); color: white; border-color: var(--brand); }
-    .ev-map-btn.primary:hover { background: var(--brand-dark); }
+    /* Event location card: map + address + directions.
+       Phones: map on top, info below. Wider screens: map left, info right.
+       `isolation` keeps Leaflet's high z-index panes from drawing over the
+       sticky navbar and tab bar while scrolling. */
+    .ev-map {
+      position: relative; isolation: isolate; margin: .2rem 0 1rem;
+      border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--white);
+    }
+    .ev-map-canvas { height: 170px; background: var(--surface); }
+    .ev-map-info { display: grid; gap: .7rem; padding: .8rem .9rem .9rem; }
+    .ev-map-address { display: flex; gap: .45rem; align-items: flex-start; margin: 0; font-size: .78rem; line-height: 1.45; color: var(--ink-2); }
+    .ev-map-address svg { flex-shrink: 0; width: 14px; height: 14px; margin-top: .15rem; color: var(--accent); }
+    .ev-map-address span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .ev-map-label { font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; color: var(--ink-3); margin: 0 0 -.3rem; }
+    .ev-map-actions { display: flex; gap: .5rem; }
+    .ev-map-btn {
+      flex: 1; display: inline-flex; align-items: center; justify-content: center; min-height: 40px;
+      padding: .5rem .8rem; border: 1.5px solid var(--line-strong); border-radius: var(--radius-pill);
+      background: var(--white); color: var(--ink-1); font-size: .74rem; font-weight: 600;
+      text-decoration: none; white-space: nowrap; transition: background .15s, border-color .15s, color .15s;
+    }
+    .ev-map-btn.primary { background: var(--black); border-color: var(--black); color: var(--white); }
+    @media (hover: hover) {
+      .ev-map-btn:hover { border-color: var(--black); }
+      .ev-map-btn.primary:hover { background: var(--accent); border-color: var(--accent); }
+    }
+    .ev-map .leaflet-control-attribution { font-size: 9px; line-height: 1.4; }
+    @media (min-width: 761px) {
+      .ev-map { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(220px, 1fr); }
+      .ev-map-canvas { height: auto; min-height: 200px; }
+      .ev-map-info { align-content: center; padding: 1rem 1.1rem; border-left: 1px solid var(--line); }
+      .ev-map-actions { flex-direction: column; }
+    }
+    /* Phones: like the description, the map spans the full card width (under the date badge) */
+    @media (max-width: 560px) {
+      .ev-map, .ev-gate-note { margin-left: calc(-52px - 1rem); }
+    }
 
     /* Membership tier gate badge */
     .ev-tier {
@@ -37,10 +68,10 @@
       background: var(--surface); color: var(--ink-2);
       font-size: .68rem; font-weight: 600; white-space: nowrap;
     }
-    .ev-locked-icon { font-size: .72rem; }
+    .ev-locked .picon { width: 13px; height: 13px; }
     .ev-gate-note {
-      margin: .35rem 0 0; padding: .5rem .65rem; border-radius: 8px;
-      background: var(--surface); border-left: 3px solid var(--brand);
+      margin: .35rem 0 .8rem; padding: .5rem .65rem; border-radius: 8px;
+      background: var(--surface); border-left: 3px solid var(--accent);
       font-size: .74rem; color: var(--ink-2);
     }
   </style>
@@ -191,7 +222,7 @@ function eventRow(ev, past=false){
     ? `<span class="status-pill cancelled" style="text-decoration:none;">Ended</span>`
     : locked
       ? `<span class="ev-locked" title="Upgrade your membership to join this ride">
-           <span class="ev-locked-icon">&#128274;</span>${minTier==='Peloton'?'Peloton members only':'Chain members and above'}
+           <svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-lock"/></svg>${minTier==='Peloton'?'Peloton members only':'Chain members and above'}
          </span>`
       : user
         ? `<button class="btn-outline btn-sm rsvp-btn" type="button" data-event-id="${esc(ev.id)}" ${full?'disabled':''}>${ev.rsvpd?'Cancel RSVP':(full?'Full':'RSVP Now')}</button>`
@@ -199,12 +230,18 @@ function eventRow(ev, past=false){
   
   // Location map for events with coordinates
   const locationMap = (ev.lat && ev.lng) ? `
-    <div class="ev-map-wrapper" style="margin-top:0.75rem;border-radius:8px;overflow:hidden;background:#e8e8e8;">
-      <div id="map-${esc(ev.id)}" style="height:180px;width:100%;"></div>
-      <p class="ev-map-address" style="margin:0.5rem 0.75rem;font-size:0.75rem;color:var(--ink-3);">${esc(ev.address || 'Event location')}</p>
-      <div class="ev-map-actions">
-        <a href="https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${ev.lat}%2C${ev.lng}" target="_blank" rel="noopener" class="ev-map-btn">🗺️ OSM Directions</a>
-        <a href="https://www.google.com/maps/dir/?api=1&destination=${ev.lat},${ev.lng}" target="_blank" rel="noopener" class="ev-map-btn primary">📍 Google Maps Directions</a>
+    <div class="ev-map">
+      <div class="ev-map-canvas" id="map-${esc(ev.id)}" role="img" aria-label="Map of the ride start point"></div>
+      <div class="ev-map-info">
+        <p class="ev-map-address">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
+          <span title="${esc(ev.address || '')}">${esc(ev.address || 'Ride start point')}</span>
+        </p>
+        <p class="ev-map-label">Get directions</p>
+        <div class="ev-map-actions">
+          <a href="https://www.google.com/maps/dir/?api=1&destination=${ev.lat},${ev.lng}" target="_blank" rel="noopener" class="ev-map-btn primary">Google Maps</a>
+          <a href="https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=%3B${ev.lat}%2C${ev.lng}" target="_blank" rel="noopener" class="ev-map-btn">OpenStreetMap</a>
+        </div>
       </div>
     </div>` : '';
 
@@ -271,13 +308,13 @@ function initEventMaps(events) {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           }).addTo(map);
           
-          // Add custom bike marker
-          L.marker([ev.lat, ev.lng], { icon: bikeIcon() }).addTo(map)
-            .bindPopup(`<strong>${esc(ev.title)}</strong><br>${esc(ev.address || 'Event location')}`)
-            .openPopup();
-            
-          // Fix sizing
+          // Marker only: the address is shown under the map, so no popup to cover it
+          L.marker([ev.lat, ev.lng], { icon: bikeIcon(), keyboard: false, interactive: false }).addTo(map);
+
+          // Re-measure once laid out, and whenever the card changes size
+          // (the map switches between stacked and side-by-side layouts)
           setTimeout(() => map.invalidateSize(), 100);
+          if (window.ResizeObserver) new ResizeObserver(() => map.invalidateSize()).observe(mapDiv);
         } catch (err) {
           console.warn('Failed to init map for event', ev.id, err);
         }

@@ -194,7 +194,7 @@ tbody tr.tr-clickable:hover td { background: var(--surface); }
   background: var(--black); color: var(--white); vertical-align: 1px; margin-left: 0.35rem;
 }
 .tier-badge.chain   { background: #6b7280; }
-.tier-badge.peloton { background: var(--brand); }
+.tier-badge.peloton { background: var(--accent); }
 
 .icon-action {
   width: 2rem; height: 2rem; border-radius: 50%; border: 1px solid var(--line); background: var(--white);
@@ -345,3 +345,40 @@ main, .admin-main { animation: adm-in .45s cubic-bezier(.22,1,.36,1) both; }
 @keyframes adm-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 tbody tr { transition: background .15s ease; }
 @media (prefers-reduced-motion: reduce) { main, .admin-main { animation: none; } .admin-nav a, .stat-card { transition: none; } }
+
+/* ===== ORDER STATUS FLOW (orders.html popup) ===== */
+.admin-modal-body .table-wrap table { min-width: 0; }   /* item list fits the popup, no sideways scroll */
+.om-flow-label { font-size: 0.66rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 0.6rem; }
+.om-flow { list-style: none; display: grid; grid-template-columns: repeat(4, 1fr); margin: 0 0 0.8rem; padding: 0; counter-reset: none; }
+.om-flow li { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.4rem; text-align: center; }
+/* connector line between steps */
+.om-flow li:not(:first-child)::before {
+  content: ''; position: absolute; top: 13px; right: 50%; width: 100%; height: 2px; background: var(--line); z-index: 0;
+}
+.om-flow li.done:not(:first-child)::before, .om-flow li.current:not(:first-child)::before { background: var(--black); }
+.om-dot {
+  position: relative; z-index: 1; width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 0.72rem; font-weight: 700; font-family: var(--font-mono);
+  background: var(--white); border: 2px solid var(--line-strong); color: var(--ink-3);
+}
+.om-flow li.done .om-dot { background: var(--black); border-color: var(--black); color: var(--white); }
+.om-flow li.current .om-dot { background: var(--accent); border-color: var(--accent); color: var(--white); box-shadow: 0 0 0 4px rgba(255,77,35,0.18); }
+.om-step { font-size: 0.68rem; font-weight: 600; color: var(--ink-3); line-height: 1.25; }
+.om-flow li.done .om-step { color: var(--ink-2); }
+.om-flow li.current .om-step { color: var(--black); font-weight: 800; }
+.om-flow.is-cancelled { opacity: 0.45; }
+.om-flow-note { font-size: 0.8rem; color: var(--ink-2); background: var(--surface); border-radius: var(--radius-sm); padding: 0.65rem 0.85rem; margin: 0 0 1.2rem; }
+.om-actions { align-items: center; flex-wrap: wrap; }
+.om-actions .btn-sm { width: auto; padding: 0.7rem 1.3rem; }
+.om-actions .btn-primary.btn-sm { background: var(--accent); }
+.om-actions button:disabled { opacity: 0.5; pointer-events: none; }
+.om-back-btn {
+  margin-right: auto; background: none; border: none; padding: 0.4rem 0; cursor: pointer;
+  font-size: 0.78rem; font-weight: 600; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px;
+}
+.om-back-btn:hover { color: var(--black); }
+@media (max-width: 520px) {
+  .om-step { font-size: 0.6rem; }
+  .om-actions .btn-sm { flex: 1 1 100%; }
+  .om-back-btn { order: 3; margin: 0 auto; }
+}

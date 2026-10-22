@@ -94,7 +94,9 @@ service cloud.firestore {
       allow create: if signedIn() && request.resource.data.user_id == request.auth.uid
         && request.resource.data.status == 'reserved';
       allow update: if isAdmin()
+        // A customer may cancel only before the store starts preparing the order
         || (signedIn() && resource.data.user_id == request.auth.uid
+            && resource.data.status == 'reserved'
             && request.resource.data.status == 'cancelled'
             && onlyChanges(['status', 'updated_at']));
       match /items/{itemId} {
