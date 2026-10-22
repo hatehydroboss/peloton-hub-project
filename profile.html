@@ -146,6 +146,7 @@ import {
 import {
   doc, updateDoc,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { apiMyPayments } from './js/mongo-payment.js';
 import { updateProfile } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
 const ready = holdLoader();   // loading screen waits for the profile and wishlist
@@ -204,6 +205,19 @@ const stopGate = onAuthStateChanged(auth, async (firebaseUser) => {
   const mid = qs('#member-id');  if (mid) mid.textContent = 'PH-' + user.id.slice(0, 6).toUpperCase();
   const up  = qs('#tier-upgrade-btn'); if (up && user.tier === 'Peloton') up.textContent = 'View tiers';
   apiOrdersGet().then(r => { const to = qs('#tier-orders-stat'); if (to && r.ok) to.textContent = r.orders.filter(o => o.status !== 'cancelled').length; });
+
+  // Paid membership upgrades: asking the payment server for this account's payments also
+  // switches on any paid upgrade that isn't active yet. Runs in the background.
+  const RANK = { Spoke: 0, Chain: 1, Peloton: 2 };
+  apiMyPayments().then(r => {
+    if (!r.ok) return;
+    const paid = r.payments.filter(p => p.type === 'membership' && p.status === 'paid' && RANK[p.metadata?.tier] > RANK[user.tier]);
+    // Just switched on → reload once to show the new tier (once only, in case an admin lowered it since)
+    const firstTime = () => { try { const k = 'ph-tier-reloaded'; if (sessionStorage.getItem(k)) return false; sessionStorage.setItem(k, '1'); return true; } catch { return false; } };
+    if (paid.some(p => p.metadata?.activated) && firstTime()) { location.reload(); return; }
+    const waiting = paid[0];
+    if (waiting && tm) tm.textContent = `${waiting.metadata.tier} payment received — switching on shortly`;
+  }).catch(() => {});
 
   // Save profile
   qs('#profile-save-btn')?.addEventListener('click', async () => {

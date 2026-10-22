@@ -189,6 +189,14 @@ async function webhook(req, res) {
 async function listMine(req, res, next) {
   try {
     const items = await Payment.find({ userId: req.user.uid }).sort({ createdAt: -1 }).limit(100);
+    // Finish any membership that was paid but not switched on yet (e.g. the customer closed
+    // PayMongo's page before coming back and no webhook arrived). The Profile page calls this.
+    const recent = Date.now() - 3 * 24 * 3600 * 1000;
+    for (const p of items) {
+      if (p.type !== 'membership' || p.metadata?.activated) continue;
+      if (p.status === 'paid') await activateIfMembership(p);
+      else if (p.status === 'pending' && p.checkoutSessionId && p.createdAt >= recent) await markPaidFromSession(p).catch(() => {});
+    }
     return res.json({ ok: true, payments: items.map(toDTO) });
   } catch (err) { next(err); }
 }

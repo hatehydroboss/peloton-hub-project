@@ -21,7 +21,11 @@ app.post('/api/paymongo/webhook', express.raw({ type: 'application/json', limit:
 app.use(express.json({ limit: '100kb' }));
 app.use(morgan('dev'));
 
-app.get('/api/health', (req, res) => res.json({ ok: true, service: 'pelotonhub-mongo-payment-api', time: new Date().toISOString() }));
+const { adminWritesEnabled } = require('./services/firestoreAdmin');
+app.get('/api/health', (req, res) => res.json({
+  ok: true, service: 'pelotonhub-mongo-payment-api', time: new Date().toISOString(),
+  membershipAutoActivate: adminWritesEnabled(),   // true once FIREBASE_SERVICE_ACCOUNT is set and valid
+}));
 
 app.use('/api/payments', paymentRoutes);
 app.use('/api/paymongo', paymongoRoutes);
