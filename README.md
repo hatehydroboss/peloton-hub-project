@@ -329,8 +329,9 @@ with no key at all.
    ```
    The last line is the **Android app** (the APK serves the site from
    `https://localhost`); without it the map fails inside the app. The app also
-   has no location permission, so there *Route to me* offers "Open in Google
-   Maps" instead, and *Navigate* opens the Google Maps app.
+   asks for location the first time *Route to me* is tapped (Android's own
+   "Allow location?" prompt); if it is refused, the route box offers "Open in
+   Google Maps" instead. *Navigate* opens the Google Maps app.
 3. Paste the key into **`js/config.js`**:
 
    ```js
