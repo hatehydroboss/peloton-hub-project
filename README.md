@@ -4,6 +4,9 @@ A local bike-shop platform built with **HTML + CSS + JavaScript** and **Firebase
 (Authentication + Cloud Firestore). There is no server-side code — the storefront
 and the admin console both talk to Firestore directly from the browser.
 
+> **Deploying?** The Events page uses the Google Maps JavaScript + Routes API.
+> Owner steps: [Deploying the Google map](#deploying-the-google-map-repo-owner).
+
 ---
 
 ## Requirements
@@ -297,6 +300,92 @@ directions. Events without coordinates simply show no map.
 **Services used** (all keyless): tiles from `tile.openstreetmap.org`, search and
 reverse geocoding from `nominatim.openstreetmap.org`. Nominatim asks for no more
 than ~1 request per second, so the search box debounces as you type.
+
+### Optional: Google Maps + routing on the storefront
+
+The storefront map can also run on **Google Maps**, with **Routes API**
+routing ("Route to me" → route from the rider's position to the ride start
+point, with distance and time). It is off by default, so the page still works
+with no key at all.
+
+**To switch it on:**
+
+1. In Google Cloud, enable **Maps JavaScript API** and **Routes API** for
+   the project, then create an API key. (Google asks for a billing account for
+   the Maps APIs — the Events page works without one, see below.)
+2. **Restrict the key** (Websites / HTTP referrers). List all three Firebase
+   domains — `pelotonhub` is the hosting site, `peletonhub` (one `l`) the project
+   — plus localhost for testing. A missing domain makes the map fail with
+   `RefererNotAllowedError`.
+
+   ```
+   https://pelotonhub.web.app/*
+   https://peletonhub.web.app/*
+   https://peletonhub.firebaseapp.com/*
+   http://localhost/*
+   http://localhost:8099/*
+   http://127.0.0.1:8099/*
+   https://localhost/*
+   ```
+   The last line is the **Android app** (the APK serves the site from
+   `https://localhost`); without it the map fails inside the app. The app also
+   has no location permission, so there *Route to me* offers "Open in Google
+   Maps" instead, and *Navigate* opens the Google Maps app.
+3. Paste the key into **`js/config.js`**:
+
+   ```js
+   window.PELOTONHUB_CONFIG = {
+     googleMapsApiKey: 'AIzaSy...',
+   };
+   ```
+
+The key is read from `js/config.js` (`window.PELOTONHUB_CONFIG.googleMapsApiKey`);
+`events.html` also accepts a runtime override
+(`window.PELOTONHUB_GOOGLE_MAPS_KEY`) and a fallback constant of its own.
+With a key set, the event card shows a Google map, and *Route to me* draws the
+route on it with the Routes API.
+
+The Routes API is loaded on demand, only when a route is requested. If it is
+not enabled for the key, the page falls back automatically to the older
+**Directions API** (`maps.googleapis.com`, part of the same service as the Maps
+JavaScript API), so the button always works.
+
+### Deploying the Google map (repo owner)
+
+`js/config.js` is committed and deployed with the site (it is not in the
+`ignore` list in `firebase.json`). Nothing else needs deploying.
+
+1. `git pull`
+2. `npx firebase-tools deploy --only hosting`
+3. Check the live site:
+
+   | Check | Expected |
+   |---|---|
+   | `events.html` on all three Firebase domains | Google map loads on each |
+   | **Route to me** | orange route line + distance/time |
+   | **Clear** | line and summary disappear |
+   | Console (F12) | no errors — `RefererNotAllowedError` = domain missing from the key, `BillingNotEnabledMapError` = no billing linked |
+
+### Routing without an API key (no billing, no card)
+
+With no key, the storefront keeps the **keyless OpenStreetMap** map and *Route
+to me* still draws a real route on it, calculated by the free OpenStreetMap
+routing services:
+
+| Service | Used for | Endpoint |
+|---------|----------|----------|
+| **Valhalla** | bicycle routing (primary) | `valhalla1.openstreetmap.de/route` |
+| **OSRM** | driving routing (backup) | `router.project-osrm.org/route/v1` |
+
+Both need no key, no account and no payment method. The route is drawn as an
+orange line on the OpenStreetMap map, with the distance and the estimated time;
+*Start in Google Maps* hands the same origin and destination over to Google Maps
+for turn-by-turn navigation (that link never needed an API key either). If both
+services are unreachable, the page says so and offers the Google Maps link.
+
+> The two public routing servers are shared community instances — fine for a
+> site this size, but if traffic grows, host your own Valhalla/OSRM (or switch
+> on the Google key above).
 
 ---
 
