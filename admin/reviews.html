@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PelotonHub Admin — Reviews</title>
+  <link rel="icon" type="image/png" href="../img/icons/favicon-64.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/styles.css" /><link rel="stylesheet" href="css/admin.css" />
+</head>
+<body class="admin-body">
+<button class="admin-sidebar-toggle" id="admin-sidebar-toggle" aria-label="Toggle menu">&#9776;</button>
+<div class="admin-shell">
+<aside class="admin-sidebar" id="admin-sidebar">
+  <div class="admin-sidebar-brand">
+    <span>Peloton<span class="dot">Hub</span></span><span class="tag-admin">Admin</span>
+  </div>
+  <ul class="admin-nav">
+    <li class="admin-nav-label">Overview</li>
+    <li><a href="index.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-sliders"/></svg></span> Dashboard</a></li>
+    <li><a href="payments.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-receipt"/></svg></span> Payments</a></li>
+    <li class="admin-nav-label">Catalog</li>
+    <li><a href="products.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-bike"/></svg></span> Products</a></li>
+    <li><a href="stock.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-clipboard"/></svg></span> Stock Management</a></li>
+    <li><a href="orders.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-receipt"/></svg></span> Orders</a></li>
+    <li><a href="returns.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-return"/></svg></span> Returns</a></li>
+    <li><a href="refunds.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-tag"/></svg></span> Refunds</a></li>
+    <li class="admin-nav-label">Community</li>
+    <li><a href="customers.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-user"/></svg></span> Customers</a></li>
+    <li><a href="events.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-calendar"/></svg></span> Events &amp; RSVPs</a></li>
+    <li><a href="membership.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-trophy"/></svg></span> Membership Tiers</a></li>
+    <li><a href="reviews.html" class="active"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-star"/></svg></span> Reviews</a></li>
+    <li class="admin-nav-label">Support</li>
+    <li><a href="messages.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-bulb"/></svg></span> Messages</a></li>
+  </ul>
+  <div class="admin-sidebar-foot">
+    <div class="admin-avatar" id="admin-initials">SA</div>
+    <div class="who">
+      <div class="name" id="admin-name">Shop Admin</div>
+      <div class="role">Administrator</div>
+    </div>
+    <button class="admin-logout-btn" id="admin-logout-btn" type="button" aria-label="Log out" title="Log out">&#10148;</button>
+  </div>
+</aside>
+
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <div><h1>Reviews</h1><p class="sub" id="rv-sub">&nbsp;</p></div>
+      <div class="admin-topbar-right">
+        <a href="../home.html" class="btn-nav" style="background:var(--black);" target="_blank" rel="noopener">View Storefront</a>
+      </div>
+    </header>
+    <main class="admin-content">
+      <div class="admin-card">
+        <div class="data-toolbar">
+          <div class="admin-search"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-search"/></svg><input type="text" id="rv-search" placeholder="Search reviewer or review text&hellip;" /></div>
+          <select id="rv-filter-stars">
+            <option value="">All Ratings</option>
+            <option value="5">5 stars</option>
+            <option value="4">4 stars</option>
+            <option value="3">3 stars</option>
+            <option value="2">2 stars</option>
+            <option value="1">1 star</option>
+          </select>
+          <select id="rv-filter-product"><option value="">All Products</option></select>
+          <select id="rv-filter-visible">
+            <option value="">Visible &amp; Hidden</option>
+            <option value="visible">Visible</option>
+            <option value="hidden">Hidden</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Product</th><th>Reviewer</th><th>Rating</th><th>Review</th><th>Status</th><th class="th-actions">Actions</th></tr></thead>
+            <tbody id="reviews-tbody"><tr><td colspan="7" style="color:var(--ink-3)">Loading&hellip;</td></tr></tbody>
+          </table>
+        </div>
+        <p class="pager" id="reviews-pager"></p>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- REPLY MODAL -->
+<div class="modal-overlay" id="reply-modal">
+  <div class="modal-box" style="max-width:540px;">
+    <button class="modal-close" id="reply-modal-close" aria-label="Close">&times;</button>
+    <div class="admin-modal-body">
+      <h2 id="rp-title">Reply to Review</h2>
+      <div class="rp-review">
+        <div class="rv-top"><strong id="rp-author"></strong><span class="review-stars" id="rp-stars"></span></div>
+        <div class="rv-product" id="rp-product"></div>
+        <p id="rp-body"></p>
+      </div>
+      <div class="form-group">
+        <label for="rp-text">Your reply (shown under the review on the product page)</label>
+        <textarea id="rp-text" rows="4" maxlength="1000" placeholder="Thanks for riding with us&hellip;"></textarea>
+        <p class="as-hint" style="margin:0.35rem 0 0;" id="rp-count">0 / 1000</p>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-danger-outline btn-sm" type="button" id="rp-remove" style="margin-right:auto;">Remove Reply</button>
+        <button class="btn-outline btn-sm" type="button" id="rp-cancel">Cancel</button>
+        <button class="btn-primary btn-sm" type="button" id="rp-save">Post Reply</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="ph-toast" aria-live="polite"></div>
+<script>
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function cap(s){return s?s.split('_').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '):'';}
+function toast(m){const t=document.getElementById('ph-toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+function qs(s){return document.querySelector(s);}
+function day(s){return (s||'').slice(0,10);}
+function when(s){return (s||'').slice(0,16).replace('T',' ');}
+function stars(n){n=Math.max(0,Math.min(5,Math.round(n||0)));return '\u2605'.repeat(n)+'\u2606'.repeat(5-n);}
+let ALL=[];
+const state={search:'',stars:'',product:'',visible:''};
+
+// "Juan Dela Cruz — Verified" → name, with the badge text underneath
+function authorCell(author){
+  const [name,...rest]=String(author||'Anonymous').split(' — ');
+  return `<span class="rv-name">${esc(name)}</span>${rest.length?`<span class="as-sub">${esc(rest.join(' — '))}</span>`:''}`;
+}
+// Long reviews and replies are cut to a few lines; "Show more" opens the whole text
+function markLongText(){
+  document.querySelectorAll('#reviews-tbody .review-body').forEach(td=>{
+    const cut=[...td.querySelectorAll('.rv-clamp')].some(el=>el.scrollHeight>el.clientHeight+1);
+    td.querySelector('.rv-more').hidden=!cut;
+  });
+}
+
+function render(){
+  let list=ALL.slice();
+  if(state.search){const q=state.search.toLowerCase();list=list.filter(r=>(r.author||'').toLowerCase().includes(q)||(r.body||'').toLowerCase().includes(q));}
+  if(state.stars) list=list.filter(r=>Math.round(r.rating)===Number(state.stars));
+  if(state.product) list=list.filter(r=>r.product_id===state.product);
+  if(state.visible) list=list.filter(r=>state.visible==='hidden'?r.hidden:!r.hidden);
+  qs('#reviews-pager').textContent='Showing '+list.length+' of '+ALL.length+' review'+(ALL.length===1?'':'s');
+  qs('#reviews-tbody').innerHTML=list.map(r=>`
+    <tr class="${r.hidden?'is-hidden':''}">
+      <td class="rv-date">${esc(day(r.created_at))}</td>
+      <td><a href="../product.html?id=${encodeURIComponent(r.product_id)}" target="_blank" rel="noopener">${esc(r.product_name)}</a></td>
+      <td class="rv-author">${authorCell(r.author)}</td>
+      <td><span class="review-stars" title="${r.rating} of 5">${stars(r.rating)}</span></td>
+      <td class="review-body">
+        <div class="rv-clamp rv-clamp-3">${esc(r.body)}</div>
+        ${r.reply?`<div class="rv-reply"><span>Shop reply${r.reply_at?' · '+esc(day(r.reply_at)):''}</span><div class="rv-clamp rv-clamp-2">${esc(r.reply)}</div></div>`:''}
+        <button class="rv-more" type="button" hidden>Show more</button>
+      </td>
+      <td><span class="status-pill ${r.hidden?'pending':'completed'}">${r.hidden?'Hidden':'Visible'}</span></td>
+      <td><div class="table-actions">
+        <button class="btn-primary btn-sm" type="button" data-reply="${esc(r.product_id)}/${esc(r.id)}">${r.reply?'Edit Reply':'Reply'}</button>
+        <button class="btn-outline btn-sm" type="button" data-hide="${esc(r.product_id)}/${esc(r.id)}">${r.hidden?'Unhide':'Hide'}</button>
+        <button class="btn-icon-danger" type="button" data-del="${esc(r.product_id)}/${esc(r.id)}" aria-label="Delete review" title="Delete review"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-trash"/></svg></button>
+      </div></td>
+    </tr>`).join('')||(ALL.length?'<tr><td colspan="7">No reviews match your filters.</td></tr>':'<tr><td colspan="7" style="color:var(--ink-3)">No reviews yet.</td></tr>');
+  markLongText();
+}
+
+function load(){
+  return FB.apiAdminReviewsGet().then(d=>{
+    if(!d.ok){qs('#reviews-tbody').innerHTML='<tr><td colspan="7" style="color:var(--error)">Could not load reviews: '+esc(d.error)+'</td></tr>';return;}
+    ALL=d.reviews;
+    qs('#rv-sub').textContent=d.count?`Average ${d.average.toFixed(1)} of 5 from ${d.count} visible review${d.count===1?'':'s'}`+(ALL.length>d.count?` (${ALL.length-d.count} hidden)`:''):'No visible reviews yet';
+    // Product filter lists only products that have reviews
+    const sel=qs('#rv-filter-product'), keep=sel.value;
+    const products=[...new Map(ALL.map(r=>[r.product_id,r.product_name])).entries()].sort((a,b)=>a[1].localeCompare(b[1]));
+    sel.innerHTML='<option value="">All Products</option>'+products.map(([id,name])=>`<option value="${esc(id)}">${esc(name)}</option>`).join('');
+    sel.value=products.some(p=>p[0]===keep)?keep:'';
+    state.product=sel.value;
+    render();
+  });
+}
+
+qs('#rv-search').addEventListener('input',e=>{state.search=e.target.value;render();});
+qs('#rv-filter-stars').addEventListener('change',e=>{state.stars=e.target.value;render();});
+qs('#rv-filter-product').addEventListener('change',e=>{state.product=e.target.value;render();});
+qs('#rv-filter-visible').addEventListener('change',e=>{state.visible=e.target.value;render();});
+
+qs('#reviews-tbody').addEventListener('click',e=>{
+  const more=e.target.closest('.rv-more'); if(!more) return;
+  const td=more.closest('.review-body');
+  td.classList.toggle('is-open');
+  more.textContent=td.classList.contains('is-open')?'Show less':'Show more';
+});
+qs('#reviews-tbody').addEventListener('click',async e=>{
+  const rep=e.target.closest('[data-reply]');
+  if(rep){ const [pid,rid]=rep.dataset.reply.split('/'); return openReply(ALL.find(x=>x.product_id===pid&&x.id===rid)); }
+  const hide=e.target.closest('[data-hide]'), del=e.target.closest('[data-del]');
+  const key=(hide||del)?.dataset[hide?'hide':'del']; if(!key) return;
+  const [product_id,id]=key.split('/');
+  const r=ALL.find(x=>x.product_id===product_id&&x.id===id); if(!r) return;
+  if(hide){
+    hide.disabled=true;
+    const d=await FB.apiAdminReviewHide({product_id,id,hidden:!r.hidden});
+    if(!d.ok){hide.disabled=false;toast(d.error);return;}
+    toast(r.hidden?'Review is visible again':'Review hidden from the product page');
+  } else {
+    const ok=await adminConfirm({title:'Delete this review?',message:`${r.author||'Anonymous'}\u2019s ${r.rating}-star review of ${r.product_name} will be removed for good. Hide it instead if you may want it back.`,confirmText:'Delete Review'});
+    if(!ok) return;
+    del.disabled=true;
+    const d=await FB.apiAdminReviewDelete({product_id,id});
+    if(!d.ok){del.disabled=false;toast(d.error);return;}
+    toast('Review deleted');
+  }
+  load();
+});
+
+// ── Reply to a review ──
+const rmodal=qs('#reply-modal');
+let replying=null;
+function openReply(r){
+  if(!r) return;
+  replying=r;
+  qs('#rp-title').textContent=r.reply?'Edit Reply':'Reply to Review';
+  qs('#rp-author').textContent=r.author||'Anonymous';
+  qs('#rp-stars').textContent=stars(r.rating);
+  qs('#rp-product').textContent=r.product_name;
+  qs('#rp-body').textContent=r.body||'';
+  qs('#rp-text').value=r.reply||'';
+  qs('#rp-count').textContent=(r.reply||'').length+' / 1000';
+  qs('#rp-remove').style.display=r.reply?'':'none';
+  qs('#rp-save').textContent=r.reply?'Save Reply':'Post Reply';
+  rmodal.classList.add('open');
+  qs('#rp-text').focus();
+}
+function closeReply(){rmodal.classList.remove('open');replying=null;}
+qs('#reply-modal-close').addEventListener('click',closeReply);
+qs('#rp-cancel').addEventListener('click',closeReply);
+rmodal.addEventListener('click',e=>{if(e.target===rmodal)closeReply();});
+qs('#rp-text').addEventListener('input',e=>{qs('#rp-count').textContent=e.target.value.length+' / 1000';});
+async function saveReply(text){
+  const r=replying; if(!r) return;
+  const btns=[...rmodal.querySelectorAll('.modal-actions button')];
+  btns.forEach(b=>b.disabled=true);
+  const d=await FB.apiAdminReviewReply({product_id:r.product_id,id:r.id,reply:text});
+  btns.forEach(b=>b.disabled=false);
+  if(!d.ok){toast(d.error);return;}
+  toast(text?'Reply posted on the product page':'Reply removed');
+  closeReply(); load();
+}
+qs('#rp-save').addEventListener('click',()=>{
+  const text=qs('#rp-text').value.trim();
+  if(!text){toast('Write a reply first');qs('#rp-text').focus();return;}
+  saveReply(text);
+});
+qs('#rp-remove').addEventListener('click',async()=>{
+  if(!replying) return;
+  if(await adminConfirm({title:'Remove your reply?',message:'The reply will no longer show under this review.',confirmText:'Remove Reply'})) saveReply('');
+});
+
+document.addEventListener('admin-ready',()=>{
+  const toggle=document.getElementById('admin-sidebar-toggle');
+  const sidebar=document.getElementById('admin-sidebar');
+  if(toggle&&sidebar) toggle.addEventListener('click',()=>sidebar.classList.toggle('open'));
+  load();
+});
+</script>
+<script type="module" src="js/admin-common.js"></script>
+</body>
+</html>

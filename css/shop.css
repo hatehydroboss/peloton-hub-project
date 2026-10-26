@@ -216,6 +216,10 @@
 .pd-review-top strong { display: block; font-size: .84rem; }
 .pd-review-top .stars { color: #f5a623; font-size: .8rem; letter-spacing: .06em; }
 .pd-review p { font-size: .86rem; color: var(--ink-2); line-height: 1.6; }
+.pd-reply { margin-top: .8rem; padding: .7rem .85rem; background: var(--surface); border-left: 3px solid var(--accent); border-radius: 10px; }
+.pd-reply-head { display: block; font-size: .68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin-bottom: .2rem; }
+.pd-reply-head small { font-weight: 500; color: var(--ink-3); letter-spacing: 0; text-transform: none; margin-left: .3rem; }
+.pd-review .pd-reply p { font-size: .82rem; white-space: pre-line; }
 .pd-write { max-width: 560px; }
 .pd-star-pick { display: flex; gap: .2rem; margin-bottom: 1rem; }
 .pd-star-pick button { border: none; background: none; font-size: 1.7rem; color: var(--line-strong); padding: 0 .1rem; transition: transform .15s, color .15s; line-height: 1; }

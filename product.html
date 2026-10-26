@@ -209,6 +209,7 @@ document.getElementById('main').innerHTML = `
             <div><strong>${esc(rv.author)}</strong><span class="stars">${stars(rv.rating)}</span></div>
           </div>
           <p>${esc(rv.body)}</p>
+          ${rv.reply?`<div class="pd-reply"><span class="pd-reply-head">Reply from PelotonHub${rv.reply_at?` <small>${esc(rv.reply_at.slice(0,10))}</small>`:''}</span><p>${esc(rv.reply)}</p></div>`:''}
         </article>`).join('')}
       </div>`}
 

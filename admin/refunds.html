@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PelotonHub Admin — Refunds</title>
+  <link rel="icon" type="image/png" href="../img/icons/favicon-64.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/styles.css" /><link rel="stylesheet" href="css/admin.css" />
+</head>
+<body class="admin-body">
+<button class="admin-sidebar-toggle" id="admin-sidebar-toggle" aria-label="Toggle menu">&#9776;</button>
+<div class="admin-shell">
+<aside class="admin-sidebar" id="admin-sidebar">
+  <div class="admin-sidebar-brand">
+    <span>Peloton<span class="dot">Hub</span></span><span class="tag-admin">Admin</span>
+  </div>
+  <ul class="admin-nav">
+    <li class="admin-nav-label">Overview</li>
+    <li><a href="index.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-sliders"/></svg></span> Dashboard</a></li>
+    <li><a href="payments.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-receipt"/></svg></span> Payments</a></li>
+    <li class="admin-nav-label">Catalog</li>
+    <li><a href="products.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-bike"/></svg></span> Products</a></li>
+    <li><a href="stock.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-clipboard"/></svg></span> Stock Management</a></li>
+    <li><a href="orders.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-receipt"/></svg></span> Orders</a></li>
+    <li><a href="returns.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-return"/></svg></span> Returns</a></li>
+    <li><a href="refunds.html" class="active"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-tag"/></svg></span> Refunds</a></li>
+    <li class="admin-nav-label">Community</li>
+    <li><a href="customers.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-user"/></svg></span> Customers</a></li>
+    <li><a href="events.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-calendar"/></svg></span> Events &amp; RSVPs</a></li>
+    <li><a href="membership.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-trophy"/></svg></span> Membership Tiers</a></li>
+    <li><a href="reviews.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-star"/></svg></span> Reviews</a></li>
+    <li class="admin-nav-label">Support</li>
+    <li><a href="messages.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-bulb"/></svg></span> Messages</a></li>
+  </ul>
+  <div class="admin-sidebar-foot">
+    <div class="admin-avatar" id="admin-initials">SA</div>
+    <div class="who">
+      <div class="name" id="admin-name">Shop Admin</div>
+      <div class="role">Administrator</div>
+    </div>
+    <button class="admin-logout-btn" id="admin-logout-btn" type="button" aria-label="Log out" title="Log out">&#10148;</button>
+  </div>
+</aside>
+
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <div><h1>Refunds</h1><p class="sub"><span id="ref-waiting">0</span> waiting to be refunded &middot; <span id="ref-open">0</span> in progress</p></div>
+      <div class="admin-topbar-right">
+        <a href="../home.html" class="btn-nav" style="background:var(--black);" target="_blank" rel="noopener">View Storefront</a>
+      </div>
+    </header>
+    <main class="admin-content">
+      <div class="admin-card">
+        <div class="admin-card-head"><h2>Awaiting Refund</h2></div>
+        <p class="as-hint" style="margin-top:-0.6rem;">Paid orders that were cancelled, and returns marked Item Received. Recording a refund here doesn&rsquo;t send money: pay the customer by the chosen method, then record its reference number. Online (PayMongo) payments can also be refunded on the <a href="payments.html">Payments</a> page.</p>
+        <p class="as-alert" id="pay-warning" hidden></p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>For</th><th>Order</th><th>Customer</th><th>Date</th><th class="num">Refundable</th><th></th></tr></thead>
+            <tbody id="queue-tbody"><tr><td colspan="6" style="color:var(--ink-3)">Loading&hellip;</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <div class="admin-card-head"><h2>Refunds</h2></div>
+        <div class="data-toolbar">
+          <div class="admin-search"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-search"/></svg><input type="text" id="f-search" placeholder="Search order ID, customer or reference no.&hellip;" /></div>
+          <select id="f-filter-status">
+            <option value="">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="processing">Processing</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Order</th><th>Customer</th><th>For</th><th class="num">Amount</th><th>Method</th><th>Reference No.</th><th>Status</th><th></th></tr></thead>
+            <tbody id="refunds-tbody"><tr><td colspan="9" style="color:var(--ink-3)">Loading&hellip;</td></tr></tbody>
+          </table>
+        </div>
+        <p class="pager" id="refunds-pager"></p>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- NEW REFUND MODAL -->
+<div class="modal-overlay" id="refund-modal">
+  <div class="modal-box" style="max-width:520px;">
+    <button class="modal-close" id="refund-modal-close" aria-label="Close">&times;</button>
+    <div class="admin-modal-body">
+      <h2>Process Refund</h2>
+      <dl class="as-kv">
+        <dt>For</dt><dd id="fm-for"></dd>
+        <dt>Order</dt><dd class="mono" id="fm-order"></dd>
+        <dt>Customer</dt><dd id="fm-customer"></dd>
+        <dt>Refundable</dt><dd><strong id="fm-max"></strong></dd>
+      </dl>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label for="fm-amount">Amount (&#8369;)</label>
+          <input id="fm-amount" type="number" min="0.01" step="0.01" inputmode="decimal" />
+        </div>
+        <div class="form-group">
+          <label for="fm-method">Method</label>
+          <select id="fm-method"></select>
+        </div>
+      </div>
+      <p class="as-hint" id="fm-amount-hint"></p>
+      <div class="form-group">
+        <label for="fm-ref">Reference No.</label>
+        <input id="fm-ref" type="text" maxlength="100" placeholder="e.g. GCash ref. 1234 567 890" />
+      </div>
+      <div class="form-group">
+        <label for="fm-notes">Notes</label>
+        <textarea id="fm-notes" rows="3" maxlength="1000" placeholder="Optional"></textarea>
+      </div>
+      <p class="form-msg" id="fm-msg" aria-live="polite"></p>
+      <div class="modal-actions">
+        <button class="btn-outline btn-sm" type="button" id="fm-cancel">Cancel</button>
+        <button class="btn-primary btn-sm" type="button" id="fm-save">Record Refund</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="ph-toast" aria-live="polite"></div>
+<script>
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function cap(s){return s?s.split('_').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '):'';}
+function toast(m){const t=document.getElementById('ph-toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+function qs(s){return document.querySelector(s);}
+function day(s){return (s||'').slice(0,10);}
+function when(s){return (s||'').slice(0,16).replace('T',' ');}
+function peso(n){return FB.peso2(n);}
+function showMsg(el,type,text){el.textContent=text;el.className='form-msg show '+type;}
+const PILL={pending:'reserved',processing:'preparing',completed:'completed'};
+const NEXT={pending:{to:'processing',label:'Mark Processing'},processing:{to:'completed',label:'Mark Completed'}};
+const FOR={cancellation:'Cancelled order',return:'Returned items'};
+let REFUNDS=[], QUEUE=[], current=null;
+const state={search:'',status:''};
+
+// Money paid per order on the payment server (MongoDB)
+function paidByOrder(payments){
+  const m={};
+  payments.filter(p=>p.type!=='membership'&&p.status==='paid').forEach(p=>{m[p.orderId]=(m[p.orderId]||0)+(p.amount||0);});
+  return m;
+}
+
+async function load(){
+  const [f,r,o,p]=await Promise.all([
+    FB.apiAdminRefundsGet(),
+    FB.apiAdminReturnsGet(),
+    FB.apiAdminOrdersGet(),   // filtered below: a status filter would need its own Firestore index
+    window.PAY.apiAdminPayments({limit:500}),
+  ]);
+  if(!f.ok){qs('#refunds-tbody').innerHTML='<tr><td colspan="9" style="color:var(--error)">Could not load refunds: '+esc(f.error)+'</td></tr>';return;}
+  REFUNDS=f.refunds;
+  const done=new Set(REFUNDS.map(x=>x.source==='return'?'r:'+x.return_id:'c:'+x.order_id));
+  QUEUE=[];
+  // Cancelled orders that were paid (only known when the payment server answers)
+  qs('#pay-warning').hidden=p.ok;
+  if(!p.ok) qs('#pay-warning').textContent='Payments couldn\u2019t be checked ('+p.error+'), so paid cancelled orders aren\u2019t listed right now.';
+  if(p.ok&&o.ok){
+    const paid=paidByOrder(p.payments);
+    o.orders.filter(x=>x.status==='cancelled'&&paid[x.id]>0&&!done.has('c:'+x.id)).forEach(x=>QUEUE.push({
+      source:'cancellation', order_id:x.id, customer:x.customer_name||x.customer_email||'', date:x.cancelled_at||x.updated_at||x.created_at,
+      max:Math.min(paid[x.id],x.total||paid[x.id])}));
+  }
+  if(r.ok) r.returns.filter(x=>x.status==='item_received'&&!done.has('r:'+x.id)).forEach(x=>QUEUE.push({
+    source:'return', order_id:x.order_id, return_id:x.id, customer:x.customer_name||x.customer_email||'', date:x.received_at||x.created_at,
+    max:x.items_value||0}));
+  QUEUE.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  renderQueue(); render();
+  // Opened from Returns → "Process Refund"
+  const want=new URLSearchParams(location.search).get('return');
+  if(want){const q=QUEUE.find(x=>x.return_id===want); if(q) openNew(QUEUE.indexOf(q)); history.replaceState(null,'','refunds.html');}
+}
+
+function renderQueue(){
+  qs('#ref-waiting').textContent=QUEUE.length;
+  qs('#queue-tbody').innerHTML=QUEUE.map((q,i)=>`
+    <tr class="queue-row">
+      <td>${FOR[q.source]}</td>
+      <td class="mono">${esc(q.order_id)}</td>
+      <td>${esc(q.customer)}</td>
+      <td>${esc(day(q.date))}</td>
+      <td class="num">${peso(q.max)}</td>
+      <td><div class="table-actions"><button class="btn-primary btn-sm" type="button" data-new="${i}">Process Refund</button></div></td>
+    </tr>`).join('')||'<tr><td colspan="6" style="color:var(--ink-3)">Nothing waiting to be refunded.</td></tr>';
+}
+
+function render(){
+  let list=REFUNDS.slice();
+  if(state.search){const q=state.search.toLowerCase();list=list.filter(x=>x.order_id.toLowerCase().includes(q)||(x.customer_name||'').toLowerCase().includes(q)||(x.reference_no||'').toLowerCase().includes(q));}
+  if(state.status) list=list.filter(x=>x.status===state.status);
+  qs('#ref-open').textContent=REFUNDS.filter(x=>x.status!=='completed').length;
+  qs('#refunds-pager').textContent='Showing '+list.length+' of '+REFUNDS.length+' refund'+(REFUNDS.length===1?'':'s');
+  qs('#refunds-tbody').innerHTML=list.map(x=>`
+    <tr>
+      <td>${esc(day(x.created_at))}</td>
+      <td class="mono">${esc(x.order_id)}</td>
+      <td>${esc(x.customer_name||x.customer_email||'')}</td>
+      <td>${FOR[x.source]||''}${x.notes?`<span class="as-sub" title="${esc(x.notes)}">${esc(x.notes.slice(0,40))}${x.notes.length>40?'\u2026':''}</span>`:''}</td>
+      <td class="num">${peso(x.amount)}${x.amount<x.max_amount?'<span class="as-sub">partial</span>':''}</td>
+      <td>${esc(x.method)}</td>
+      <td class="mono">${esc(x.reference_no||'\u2014')}</td>
+      <td><span class="status-pill ${PILL[x.status]||''}">${cap(x.status)}</span>${x.completed_at?'<span class="as-sub">'+esc(day(x.completed_at))+'</span>':''}</td>
+      <td>${NEXT[x.status]?`<div class="table-actions"><button class="btn-outline btn-sm" type="button" data-step="${esc(x.id)}">${NEXT[x.status].label}</button></div>`:''}</td>
+    </tr>`).join('')||(REFUNDS.length?'<tr><td colspan="9">No refunds match your filters.</td></tr>':'<tr><td colspan="9" style="color:var(--ink-3)">No refunds recorded yet.</td></tr>');
+}
+
+qs('#f-search').addEventListener('input',e=>{state.search=e.target.value;render();});
+qs('#f-filter-status').addEventListener('change',e=>{state.status=e.target.value;render();});
+qs('#queue-tbody').addEventListener('click',e=>{const b=e.target.closest('[data-new]');if(b)openNew(+b.dataset.new);});
+
+// Pending → Processing → Completed
+qs('#refunds-tbody').addEventListener('click',async e=>{
+  const b=e.target.closest('[data-step]'); if(!b) return;
+  const x=REFUNDS.find(r=>r.id===b.dataset.step); if(!x||!NEXT[x.status]) return;
+  const to=NEXT[x.status].to;
+  if(to==='completed'){
+    const ok=await adminConfirm({title:'Mark refund completed?',message:`Confirm that ${peso(x.amount)} has been sent to ${x.customer_name||'the customer'} by ${x.method}.`+(x.source==='return'?' The return will be marked Refunded.':''),confirmText:'Mark Completed',danger:false});
+    if(!ok) return;
+  }
+  b.disabled=true;
+  const d=await FB.apiAdminRefundStatus({id:x.id,status:to});
+  if(!d.ok){b.disabled=false;toast(d.error);return;}
+  toast('Refund marked '+to);
+  load();
+});
+
+// ── New refund ──
+const modal=qs('#refund-modal');
+function openNew(i){
+  const q=QUEUE[i]; if(!q) return;
+  current=q;
+  qs('#fm-for').textContent=FOR[q.source];
+  qs('#fm-order').textContent=q.order_id;
+  qs('#fm-customer').textContent=q.customer;
+  qs('#fm-max').textContent=peso(q.max);
+  qs('#fm-amount').value=q.max.toFixed(2);
+  qs('#fm-amount').max=q.max.toFixed(2);
+  qs('#fm-amount-hint').textContent=q.source==='return'
+    ?'Full refund is the returned items\u2019 price after the order\u2019s discount. Lower it for a partial refund.'
+    :'Full refund is the amount the customer paid. Lower it for a partial refund.';
+  qs('#fm-method').selectedIndex=0;
+  qs('#fm-ref').value=''; qs('#fm-notes').value='';
+  qs('#fm-msg').className='form-msg';
+  qs('#fm-save').disabled=false;
+  modal.classList.add('open');
+}
+function closeNew(){modal.classList.remove('open');current=null;}
+qs('#refund-modal-close').addEventListener('click',closeNew);
+qs('#fm-cancel').addEventListener('click',closeNew);
+modal.addEventListener('click',e=>{if(e.target===modal)closeNew();});
+
+qs('#fm-save').addEventListener('click',async()=>{
+  const q=current, btn=qs('#fm-save'), msg=qs('#fm-msg');
+  if(!q||btn.disabled) return;
+  const amount=Math.round(parseFloat(qs('#fm-amount').value)*100)/100;
+  if(!(amount>0)) return showMsg(msg,'error','Enter an amount greater than \u20b10.');
+  if(amount>q.max) return showMsg(msg,'error','The refund can\u2019t be more than '+peso(q.max)+'.');
+  btn.disabled=true;
+  const d=await FB.apiAdminRefundCreate({source:q.source,order_id:q.order_id,return_id:q.return_id||null,amount,max_amount:q.max,
+    method:qs('#fm-method').value,reference_no:qs('#fm-ref').value,notes:qs('#fm-notes').value});
+  if(!d.ok){btn.disabled=false;return showMsg(msg,'error',d.error);}
+  closeNew(); toast('Refund recorded as Pending'); load();
+});
+
+document.addEventListener('admin-ready',()=>{
+  const toggle=document.getElementById('admin-sidebar-toggle');
+  const sidebar=document.getElementById('admin-sidebar');
+  if(toggle&&sidebar) toggle.addEventListener('click',()=>sidebar.classList.toggle('open'));
+  qs('#fm-method').innerHTML=FB.REFUND_METHODS.map(m=>`<option>${esc(m)}</option>`).join('');
+  load();
+});
+</script>
+<script type="module">import * as PAY from '../js/mongo-payment.js'; window.PAY = PAY;</script>
+<script type="module" src="js/admin-common.js"></script>
+</body>
+</html>

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PelotonHub Admin — Returns</title>
+  <link rel="icon" type="image/png" href="../img/icons/favicon-64.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/styles.css" /><link rel="stylesheet" href="css/admin.css" />
+</head>
+<body class="admin-body">
+<button class="admin-sidebar-toggle" id="admin-sidebar-toggle" aria-label="Toggle menu">&#9776;</button>
+<div class="admin-shell">
+<aside class="admin-sidebar" id="admin-sidebar">
+  <div class="admin-sidebar-brand">
+    <span>Peloton<span class="dot">Hub</span></span><span class="tag-admin">Admin</span>
+  </div>
+  <ul class="admin-nav">
+    <li class="admin-nav-label">Overview</li>
+    <li><a href="index.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-sliders"/></svg></span> Dashboard</a></li>
+    <li><a href="payments.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-receipt"/></svg></span> Payments</a></li>
+    <li class="admin-nav-label">Catalog</li>
+    <li><a href="products.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-bike"/></svg></span> Products</a></li>
+    <li><a href="stock.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-clipboard"/></svg></span> Stock Management</a></li>
+    <li><a href="orders.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-receipt"/></svg></span> Orders</a></li>
+    <li><a href="returns.html" class="active"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-return"/></svg></span> Returns</a></li>
+    <li><a href="refunds.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-tag"/></svg></span> Refunds</a></li>
+    <li class="admin-nav-label">Community</li>
+    <li><a href="customers.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-user"/></svg></span> Customers</a></li>
+    <li><a href="events.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-calendar"/></svg></span> Events &amp; RSVPs</a></li>
+    <li><a href="membership.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-trophy"/></svg></span> Membership Tiers</a></li>
+    <li><a href="reviews.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-star"/></svg></span> Reviews</a></li>
+    <li class="admin-nav-label">Support</li>
+    <li><a href="messages.html"><span class="ic"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-bulb"/></svg></span> Messages</a></li>
+  </ul>
+  <div class="admin-sidebar-foot">
+    <div class="admin-avatar" id="admin-initials">SA</div>
+    <div class="who">
+      <div class="name" id="admin-name">Shop Admin</div>
+      <div class="role">Administrator</div>
+    </div>
+    <button class="admin-logout-btn" id="admin-logout-btn" type="button" aria-label="Log out" title="Log out">&#10148;</button>
+  </div>
+</aside>
+
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <div><h1>Returns</h1><p class="sub"><span id="ret-open">0</span> waiting for review</p></div>
+      <div class="admin-topbar-right">
+        <a href="../home.html" class="btn-nav" style="background:var(--black);" target="_blank" rel="noopener">View Storefront</a>
+      </div>
+    </header>
+    <main class="admin-content">
+      <div class="admin-card">
+        <div class="data-toolbar">
+          <div class="admin-search"><svg class="picon" aria-hidden="true"><use href="../img/icons.svg#i-search"/></svg><input type="text" id="r-search" placeholder="Search order ID or customer&hellip;" /></div>
+          <select id="r-filter-status">
+            <option value="">All Statuses</option>
+            <option value="requested">Requested</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="item_received">Item Received</option>
+            <option value="refunded">Refunded</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Requested</th><th>Order</th><th>Customer</th><th>Items</th><th>Reason</th><th class="num">Value</th><th>Status</th></tr></thead>
+            <tbody id="returns-tbody"><tr><td colspan="7" style="color:var(--ink-3)">Loading&hellip;</td></tr></tbody>
+          </table>
+        </div>
+        <p class="pager" id="returns-pager"></p>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- RETURN DETAIL MODAL -->
+<div class="modal-overlay" id="return-modal">
+  <div class="modal-box" style="max-width:600px;">
+    <button class="modal-close" id="return-modal-close" aria-label="Close">&times;</button>
+    <div class="admin-modal-body">
+      <h2>Return Request <span class="status-pill" id="rm-status" style="vertical-align:middle;margin-left:0.4rem;"></span></h2>
+      <dl class="as-kv">
+        <dt>Order</dt><dd><span class="mono" id="rm-order"></span> <a class="om-link" id="rm-invoice" href="#" target="_blank" rel="noopener">Invoice</a></dd>
+        <dt>Customer</dt><dd id="rm-customer"></dd>
+        <dt>Dates</dt><dd id="rm-date"></dd>
+        <dt>Reason</dt><dd><strong id="rm-reason"></strong></dd>
+      </dl>
+      <div class="table-wrap" style="margin-bottom:1rem;">
+        <table><thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Price</th></tr></thead>
+        <tbody id="rm-items"></tbody></table>
+      </div>
+      <p class="om-flow-label">Customer&rsquo;s description</p>
+      <div class="as-desc" id="rm-desc"></div>
+      <div id="rm-photo-wrap" hidden>
+        <p class="om-flow-label">Photo</p>
+        <a id="rm-photo-link" href="#" target="_blank" rel="noopener"><img class="as-photo" id="rm-photo" alt="Photo sent by the customer" /></a>
+      </div>
+      <div class="as-alert" id="rm-rejected" hidden></div>
+      <p class="om-flow-note" id="rm-note"></p>
+      <div class="form-group" id="rm-reject-wrap" hidden>
+        <label for="rm-reject-reason">Reason for rejecting (the customer sees this)</label>
+        <textarea id="rm-reject-reason" rows="3" maxlength="500" placeholder="e.g. The item shows wear from use, which returns don&rsquo;t cover."></textarea>
+      </div>
+      <div class="modal-actions om-actions" id="rm-actions"></div>
+    </div>
+  </div>
+</div>
+
+<div id="ph-toast" aria-live="polite"></div>
+<script>
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function cap(s){return s?s.split('_').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '):'';}
+function toast(m){const t=document.getElementById('ph-toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+function qs(s){return document.querySelector(s);}
+function day(s){return (s||'').slice(0,10);}
+function when(s){return (s||'').slice(0,16).replace('T',' ');}
+function peso(n){return FB.peso2(n);}
+// Return statuses reuse the order status badges
+const PILL={requested:'reserved',approved:'preparing',rejected:'cancelled',item_received:'awaiting_pickup',refunded:'completed'};
+const NOTE={
+  requested:'Check the reason and photo, then approve or reject the request.',
+  approved:'Approved. Mark the item received once the customer brings it back to the store.',
+  rejected:'Rejected. The customer can see the reason on their order.',
+  item_received:'The item is back. Record the refund on the Refunds page.',
+  refunded:'Refunded. This return is closed.',
+};
+let ALL=[], active=null;
+const state={search:'',status:''};
+
+function render(){
+  let list=ALL.slice();
+  if(state.search){const q=state.search.toLowerCase();list=list.filter(r=>r.order_id.toLowerCase().includes(q)||(r.customer_name||'').toLowerCase().includes(q)||(r.customer_email||'').toLowerCase().includes(q));}
+  if(state.status) list=list.filter(r=>r.status===state.status);
+  qs('#ret-open').textContent=ALL.filter(r=>r.status==='requested').length;
+  qs('#returns-pager').textContent='Showing '+list.length+' of '+ALL.length+' return request'+(ALL.length===1?'':'s');
+  qs('#returns-tbody').innerHTML=list.map(r=>`
+    <tr class="tr-clickable" data-id="${esc(r.id)}">
+      <td>${esc(day(r.created_at))}</td>
+      <td class="mono">${esc(r.order_id)}</td>
+      <td>${esc(r.customer_name||r.customer_email||'')}</td>
+      <td class="as-items">${r.items.map(i=>esc(i.name)+' &times; '+i.qty).join('<br>')}</td>
+      <td>${esc(r.reason)}${r.photo?'<span class="as-sub">has photo</span>':''}</td>
+      <td class="num">${peso(r.items_value)}</td>
+      <td><span class="status-pill ${PILL[r.status]||''}">${cap(r.status)}</span></td>
+    </tr>`).join('')||(ALL.length?'<tr><td colspan="7">No return requests match your filters.</td></tr>':'<tr><td colspan="7" style="color:var(--ink-3)">No return requests yet. Customers request returns from My Orders within 7 days of pickup.</td></tr>');
+}
+
+function load(){
+  return FB.apiAdminReturnsGet().then(d=>{
+    if(d.ok){ALL=d.returns;render();}
+    else qs('#returns-tbody').innerHTML='<tr><td colspan="7" style="color:var(--error)">Could not load returns: '+esc(d.error)+'</td></tr>';
+  });
+}
+
+qs('#r-search').addEventListener('input',e=>{state.search=e.target.value;render();});
+qs('#r-filter-status').addEventListener('change',e=>{state.status=e.target.value;render();});
+qs('#returns-tbody').addEventListener('click',e=>{const tr=e.target.closest('tr[data-id]');if(tr)openReturn(tr.dataset.id);});
+
+const modal=qs('#return-modal');
+function openReturn(id){
+  const r=ALL.find(x=>x.id===id); if(!r) return;
+  active=r;
+  qs('#rm-status').textContent=cap(r.status);
+  qs('#rm-status').className='status-pill '+(PILL[r.status]||'');
+  qs('#rm-order').textContent=r.order_id;
+  qs('#rm-invoice').href='invoice.html?id='+encodeURIComponent(r.order_id);
+  qs('#rm-customer').textContent=[r.customer_name,r.customer_email].filter(Boolean).join(' \u00b7 ');
+  qs('#rm-date').textContent=['Requested '+when(r.created_at),
+    r.decided_at?(r.status==='rejected'?'rejected ':'approved ')+when(r.decided_at)+(r.decided_by?' by '+r.decided_by:''):'',
+    r.received_at?'received '+when(r.received_at):'',
+    r.refunded_at?'refunded '+when(r.refunded_at):''].filter(Boolean).join(' \u00b7 ');
+  qs('#rm-reason').textContent=r.reason;
+  qs('#rm-items').innerHTML=r.items.map(i=>`<tr><td>${esc(i.name)}${i.size?' <span class="as-sub">'+esc(i.size)+'</span>':''}</td><td class="num">${i.qty}</td><td class="num">${peso(i.price*i.qty)}</td></tr>`).join('')
+    +`<tr><td colspan="2"><strong>Refundable value</strong> <span class="as-sub">after the order&rsquo;s discount</span></td><td class="num"><strong>${peso(r.items_value)}</strong></td></tr>`;
+  qs('#rm-desc').textContent=r.description||'';
+  qs('#rm-photo-wrap').hidden=!r.photo;
+  if(r.photo){qs('#rm-photo').src=r.photo;qs('#rm-photo-link').href=r.photo;}
+  qs('#rm-rejected').hidden=!(r.status==='rejected'&&r.reject_reason);
+  qs('#rm-rejected').textContent='Rejected: '+(r.reject_reason||'');
+  qs('#rm-note').textContent=NOTE[r.status]||'';
+  qs('#rm-reject-wrap').hidden=true;
+  qs('#rm-reject-reason').value='';
+  renderActions('');
+  modal.classList.add('open');
+}
+
+// Buttons for the request's current step; data-act says what each one does
+function renderActions(mode){
+  const r=active, box=qs('#rm-actions');
+  if(r.status==='requested'&&mode==='reject'){
+    box.innerHTML='<button class="om-back-btn" type="button" data-act="back">Back</button><button class="btn-danger-outline btn-sm" type="button" data-act="rejected">Confirm Rejection</button>';
+  } else if(r.status==='requested'){
+    box.innerHTML='<button class="btn-danger-outline btn-sm" type="button" data-act="reject">Reject</button><button class="btn-primary btn-sm" type="button" data-act="approved">Approve Return</button>';
+  } else if(r.status==='approved'){
+    box.innerHTML='<button class="btn-primary btn-sm" type="button" data-act="item_received">Mark Item Received</button>';
+  } else if(r.status==='item_received'){
+    box.innerHTML=`<a class="btn-primary btn-sm" style="width:auto;text-decoration:none;" href="refunds.html?return=${encodeURIComponent(r.id)}">Process Refund &rarr;</a>`;
+  } else box.innerHTML='';
+}
+qs('#rm-actions').addEventListener('click',e=>{
+  const act=e.target.closest('button')?.dataset.act;
+  if(!act) return;
+  if(act==='reject'){qs('#rm-reject-wrap').hidden=false;renderActions('reject');qs('#rm-reject-reason').focus();}
+  else if(act==='back'){qs('#rm-reject-wrap').hidden=true;renderActions('');}
+  else decide(act);
+});
+
+function decide(status){
+  if(!active) return;
+  const reject_reason=qs('#rm-reject-reason').value.trim();
+  if(status==='rejected'&&!reject_reason){toast('Write the reason the customer will see');qs('#rm-reject-reason').focus();return;}
+  const btns=[...document.querySelectorAll('#rm-actions button')];
+  btns.forEach(b=>b.disabled=true);
+  FB.apiAdminReturnStatus({id:active.id,status,reject_reason}).then(d=>{
+    btns.forEach(b=>b.disabled=false);
+    if(!d.ok){toast(d.error);return;}
+    toast(status==='item_received'?'Marked item received':'Return '+status);
+    const id=active.id;
+    load().then(()=>openReturn(id));
+  });
+}
+
+qs('#return-modal-close').addEventListener('click',()=>modal.classList.remove('open'));
+modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('open');});
+
+document.addEventListener('admin-ready',()=>{
+  const toggle=document.getElementById('admin-sidebar-toggle');
+  const sidebar=document.getElementById('admin-sidebar');
+  if(toggle&&sidebar) toggle.addEventListener('click',()=>sidebar.classList.toggle('open'));
+  load();
+});
+</script>
+<script type="module" src="js/admin-common.js"></script>
+</body>
+</html>

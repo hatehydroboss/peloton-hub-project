@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>PelotonHub — Sales Invoice</title>
+  <script src="js/page-loader.js"></script>
+  <link rel="icon" type="image/png" href="img/icons/favicon-64.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/shop.css" />
+  <link rel="stylesheet" href="css/invoice.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#ff4d23" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="apple-touch-icon" href="img/icons/apple-touch-icon.png" />
+</head>
+<body class="invoice-page">
+<a href="#main" class="skip-link">Skip to content</a>
+<nav class="navbar">
+  <a href="home.html" class="logo"><span>Peloton<span class="dot">Hub</span></span></a>
+  <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+  <ul class="nav-links" id="nav-links">
+    <li><a href="home.html">Home</a></li>
+    <li><a href="catalog.html">Catalog</a></li>
+    <li><a href="membership.html">Membership</a></li>
+    <li><a href="events.html">Events</a></li>
+    <li><a href="support.html">Support</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="cart.html" class="icon-btn" aria-label="View cart">
+      <svg class="picon" aria-hidden="true"><use href="img/icons.svg#i-cart"/></svg>
+      <span class="badge" hidden>0</span>
+    </a>
+    <a href="auth.html" class="btn-nav" id="nav-auth-btn">Sign In</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <p class="eyebrow">Account</p>
+  <h1>Sales Invoice</h1>
+</div>
+
+<main id="main" class="section">
+  <div class="inv-actions">
+    <a class="btn-outline btn-sm" href="orders.html">&larr; My Orders</a>
+    <button class="btn-primary btn-sm" type="button" id="inv-print" hidden>Print Invoice</button>
+  </div>
+  <div class="inv-wrap" id="inv-wrap"><p class="inv-status">Loading invoice&hellip;</p></div>
+</main>
+
+<script type="module">
+import { esc, getUser, holdLoader } from './js/main.js';
+const ready = holdLoader();
+import { apiOrdersGet } from './js/firebase.js';
+import { renderInvoice } from './js/invoice.js';
+
+const wrap = document.getElementById('inv-wrap');
+const id = new URLSearchParams(location.search).get('id');
+const user = await getUser();
+if (!user) {
+  wrap.innerHTML = '<p class="inv-status">Please <a href="auth.html" style="color:var(--accent);font-weight:700;">sign in</a> to see your invoice.</p>';
+} else if (!id) {
+  wrap.innerHTML = '<p class="inv-status">No order selected. Open an invoice from <a href="orders.html" style="color:var(--accent);font-weight:700;">My Orders</a>.</p>';
+} else {
+  const d = await apiOrdersGet({ id });
+  if (d.ok) {
+    wrap.innerHTML = renderInvoice(d.order);
+    document.title = 'PelotonHub — ' + (d.order.invoice_no || 'Invoice ' + d.order.id);
+    document.getElementById('inv-print').hidden = false;
+  } else {
+    wrap.innerHTML = '<p class="inv-status">' + esc(d.error || 'Couldn’t load this invoice.') + '</p>';
+  }
+}
+document.getElementById('inv-print').addEventListener('click', () => window.print());
+ready();
+</script>
+</body>
+</html>

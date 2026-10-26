@@ -59,10 +59,18 @@ service cloud.firestore {
         || (signedIn() && onlyChanges(['stock_qty', 'in_stock', 'updated_at']));
       match /reviews/{rid} {
         allow read: if true;
+        // Customers can't write the shop's reply or hide flag into their own review
         allow create: if isAdmin()
-          || (signedIn() && request.resource.data.user_id == request.auth.uid);
+          || (signedIn() && request.resource.data.user_id == request.auth.uid
+              && !request.resource.data.keys().hasAny(['reply', 'reply_by', 'reply_at', 'hidden']));
+        // Admins reply, hide/unhide (the `hidden` field) or delete reviews
         allow update, delete: if isAdmin();
       }
+    }
+
+    // Admin → Reviews lists every product's reviews at once (a collection-group query)
+    match /{path=**}/reviews/{rid} {
+      allow read: if true;
     }
 
     // Events: public read, admin write; RSVPs may change the filled count only
@@ -94,11 +102,12 @@ service cloud.firestore {
       allow create: if signedIn() && request.resource.data.user_id == request.auth.uid
         && request.resource.data.status == 'reserved';
       allow update: if isAdmin()
-        // A customer may cancel only before the store starts preparing the order
+        // A customer may cancel while the order is Reserved or Preparing, giving a reason
         || (signedIn() && resource.data.user_id == request.auth.uid
-            && resource.data.status == 'reserved'
+            && resource.data.status in ['reserved', 'preparing']
             && request.resource.data.status == 'cancelled'
-            && onlyChanges(['status', 'updated_at']));
+            && request.resource.data.cancelled_by == 'customer'
+            && onlyChanges(['status', 'updated_at', 'cancel_reason', 'cancel_note', 'cancelled_at', 'cancelled_by']));
       match /items/{itemId} {
         allow read: if isAdmin() || (signedIn() &&
           get(/databases/$(database)/documents/orders/$(orderId)).data.user_id == request.auth.uid);
@@ -117,12 +126,38 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Support tickets: a signed-in customer opens their own; only admins read and reply
+    // Return requests: a customer asks to return items of their own completed order,
+    // within 7 days of its delivery (pickup) date; admins approve/reject and receive them
+    match /returns/{id} {
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.user_id == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.user_id == request.auth.uid
+        && request.resource.data.status == 'requested'
+        && returnableOrder(request.resource.data.order_id);
+      allow update, delete: if isAdmin();
+    }
+    function returnableOrder(orderId) {
+      let order = get(/databases/$(database)/documents/orders/$(orderId)).data;
+      return order.user_id == request.auth.uid
+        && order.status == 'completed'
+        && order.get('delivered_at', null) is timestamp
+        && order.delivered_at > request.time - duration.value(7, 'd');
+    }
+
+    // Refunds: recorded and updated by admins; a customer can see their own
+    match /refunds/{id} {
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.user_id == request.auth.uid);
+      allow write: if isAdmin();
+    }
+
+    // Support tickets: a signed-in customer opens their own; only admins read, reply and delete
     match /support_tickets/{id} {
       allow create: if signedIn()
         && request.resource.data.status == 'new'
         && request.resource.data.user_id == request.auth.uid;
-      allow read, update: if isAdmin();
+      allow read, update, delete: if isAdmin();
       match /replies/{rid} {
         allow read, write: if isAdmin();
       }

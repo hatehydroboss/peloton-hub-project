@@ -16,6 +16,7 @@
       "js/firebase-seed.js",
       "js/firebase-stock-seed.js",
       "server/**",
+      "migrations/**",
       "fix_mem_module.js",
       "replace_mem_modaljs.js",
       "firestore.rules",

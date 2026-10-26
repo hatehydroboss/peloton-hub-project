@@ -181,6 +181,7 @@ import { esc, peso, getUser, refreshCartBadge, confetti, icon, holdLoader } from
 const ready = holdLoader();
 import { apiCartGet, apiCartUpdate, apiCartRemove, apiOrderPlace, apiPromo, apiSettingsGet } from './js/firebase.js';
 import { apiPaymentCreate, apiPaymongoCheckout, goToCheckout, wakePaymentServer } from './js/mongo-payment.js';
+import { vatBreakdown, peso2, VAT_LABEL } from './js/tax.js';
 wakePaymentServer();   // the free server sleeps when idle; wake it while the customer fills in the cart
 
 const user = await getUser();
@@ -226,14 +227,21 @@ function renderCart(){
 
   const subtotal = CART.reduce((s,l)=>s+l.price*l.qty, 0);
   const disc     = effectiveDisc();
-  const discAmt  = Math.round(subtotal * disc / 100);
-  const total    = subtotal - discAmt;
+  // Same rounding as checkout (apiOrderPlace), so the VAT shown here is what the order saves
+  const total    = Math.round(subtotal * (1 - disc / 100) * 100) / 100;
+  const discAmt  = subtotal - total;
+  const vat      = vatBreakdown(total);   // prices are VAT-inclusive
 
   const rows = document.getElementById('summary-rows');
   rows.innerHTML=`
-    <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:0.3rem;"><span>Subtotal</span><span>${peso(subtotal)}</span></div>
-    ${disc?`<div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:0.3rem;color:var(--success,green);"><span>Discount (${disc}%)</span><span>-${peso(discAmt)}</span></div>`:''}
-    <div style="display:flex;justify-content:space-between;font-weight:700;font-size:1rem;padding-top:0.5rem;border-top:1px solid var(--line);margin-top:0.5rem;"><span>Total</span><span>${peso(total)}</span></div>`;
+    <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:0.3rem;"><span>Subtotal</span><span>${peso2(subtotal)}</span></div>
+    ${disc?`<div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:0.3rem;color:var(--success,green);"><span>Discount (${disc}%)</span><span>-${peso2(discAmt)}</span></div>`:''}
+    <div class="vat-box">
+      <div class="vat-row"><span>VATable Sales</span><span>${peso2(vat.vatable_sales)}</span></div>
+      <div class="vat-row"><span>${VAT_LABEL}</span><span>${peso2(vat.vat_amount)}</span></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-weight:700;font-size:1rem;padding-top:0.5rem;border-top:1px solid var(--line);margin-top:0.5rem;"><span>Total Amount Due</span><span>${peso2(vat.total)}</span></div>
+    <p class="vat-note">Prices include VAT.</p>`;
 }
 
 function loadCart(){

@@ -102,7 +102,7 @@ function injectTabbar() {
 // already has its own Back button.
 // Goes back in history when the previous page is ours; otherwise (app just
 // opened on this page, or came from sign-in) goes to the page's parent.
-const BACK_FALLBACK = { 'product.html': 'catalog.html', 'orders.html': 'profile.html' };
+const BACK_FALLBACK = { 'product.html': 'catalog.html', 'orders.html': 'profile.html', 'invoice.html': 'orders.html' };
 const NO_BACK       = ['home.html', 'index.html', ''];
 const isApp = () => !!window.Capacitor?.isNativePlatform?.();
 function injectBackButton() {

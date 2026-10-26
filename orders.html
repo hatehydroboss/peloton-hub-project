@@ -86,11 +86,75 @@
     </div>
     <div class="od-totals" style="text-align:right;font-size:0.88rem;line-height:2;" id="od-totals"></div>
     <p style="font-size:0.85rem;margin-top:1rem;">Pickup: <strong id="od-pickup"></strong></p>
-    <div style="margin-top:1rem;" id="od-actions"></div>
+    <p style="font-size:0.85rem;margin-top:0.3rem;" id="od-delivered" hidden>Picked up: <strong></strong></p>
+    <div style="margin-top:1rem;" class="od-actions-row" id="od-actions"></div>
+    <p class="od-note" id="od-return-note" hidden></p>
     <p class="form-msg" id="od-msg" aria-live="polite"></p>
+    <div id="od-aftersales"></div>
   </div>
   </div>
 </main>
+
+<!-- CANCEL ORDER DIALOG: reason first, then a confirmation step -->
+<div class="modal-overlay mem-modal as-modal" id="cancel-modal" role="dialog" aria-modal="true" aria-labelledby="cancel-title">
+  <div class="modal-box">
+    <button class="modal-close" type="button" data-close aria-label="Close">&times;</button>
+    <p class="mem-modal-eyebrow">Order <span id="cancel-order-id"></span></p>
+    <h3 id="cancel-title">Cancel this order?</h3>
+    <div id="cancel-step-1">
+      <p class="mem-modal-sub">Tell us why you&rsquo;re cancelling. Your items go back on the shelf.</p>
+      <div class="form-group">
+        <label for="cancel-reason">Reason</label>
+        <select id="cancel-reason"><option value="">Choose a reason&hellip;</option></select>
+      </div>
+      <div class="form-group" id="cancel-note-wrap" hidden>
+        <label for="cancel-note">Tell us more</label>
+        <textarea id="cancel-note" rows="3" maxlength="500" placeholder="What made you cancel?"></textarea>
+      </div>
+    </div>
+    <div id="cancel-step-2" hidden>
+      <div class="as-confirm-box" id="cancel-summary"></div>
+      <p class="mem-modal-sub" style="margin-top:.9rem;">This can&rsquo;t be undone. If you already paid, the shop will process your refund.</p>
+    </div>
+    <p class="form-msg" id="cancel-msg" aria-live="polite"></p>
+    <div class="mem-modal-actions">
+      <button type="button" class="btn-outline" id="cancel-back">Keep Order</button>
+      <button type="button" class="btn-primary" id="cancel-next">Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- RETURN REQUEST DIALOG -->
+<div class="modal-overlay mem-modal as-modal" id="return-modal" role="dialog" aria-modal="true" aria-labelledby="return-title">
+  <div class="modal-box">
+    <button class="modal-close" type="button" data-close aria-label="Close">&times;</button>
+    <p class="mem-modal-eyebrow">Order <span id="return-order-id"></span></p>
+    <h3 id="return-title">Request a Return</h3>
+    <p class="mem-modal-sub" id="return-window"></p>
+    <p class="as-title" style="margin-bottom:.6rem;">Items to return</p>
+    <div class="rt-items" id="return-items"></div>
+    <div class="form-group">
+      <label for="return-reason">Reason</label>
+      <select id="return-reason"><option value="">Choose a reason&hellip;</option></select>
+    </div>
+    <div class="form-group">
+      <label for="return-desc">Description</label>
+      <textarea id="return-desc" rows="3" maxlength="1000" placeholder="What&rsquo;s wrong with the item?"></textarea>
+    </div>
+    <div class="form-group">
+      <span class="rt-photo-label">Photo (optional)</span>
+      <input id="return-photo" class="rt-photo-input" type="file" accept="image/*" />
+      <label for="return-photo" class="rt-photo-btn"><span aria-hidden="true">&#128247;</span> <span id="return-photo-name">Add a photo of the item</span></label>
+      <img id="return-photo-preview" class="rt-photo-preview" alt="Photo preview" hidden />
+      <button type="button" class="rt-photo-clear" id="return-photo-clear" hidden>Remove photo</button>
+    </div>
+    <p class="form-msg" id="return-msg" aria-live="polite"></p>
+    <div class="mem-modal-actions">
+      <button type="button" class="btn-outline" data-close>Not now</button>
+      <button type="button" class="btn-primary" id="return-submit">Send Request</button>
+    </div>
+  </div>
+</div>
 
 <footer>
   <div class="footer-grid">
@@ -130,11 +194,19 @@
 <script type="module">
 import { esc, peso, getUser, showMsg, Toast, holdLoader } from './js/main.js';
 const ready = holdLoader();
-import { apiOrdersGet, apiOrderCancel } from './js/firebase.js';
+import { apiOrdersGet, apiOrderCancel, apiMyAfterSales, apiReturnRequest, returnEligibility,
+         CANCELLABLE_STATUSES, CANCEL_REASONS, RETURN_REASONS, RETURN_WINDOW_DAYS } from './js/firebase.js';
+import { orderVat, peso2, VAT_LABEL } from './js/tax.js';
 
 function cap(s){return s?s.split('_').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '):'';}
+const day=s=>(s||'').slice(0,10);
+const when=s=>(s||'').slice(0,16).replace('T',' ');
 
-let ALL_ORDERS=[], activeFilter='all';
+// Return / refund statuses reuse the order status badges
+const RETURN_PILL={requested:'reserved',approved:'preparing',rejected:'rejected',item_received:'awaiting_pickup',refunded:'completed'};
+const REFUND_PILL={pending:'reserved',processing:'preparing',completed:'completed'};
+
+let ALL_ORDERS=[], activeFilter='all', CURRENT=null, AFTER={returns:[],refunds:[]};
 
 function render(){
   let list=ALL_ORDERS.filter(o=>activeFilter==='all'||o.status===activeFilter);
@@ -168,9 +240,10 @@ document.querySelectorAll('#order-filters button').forEach(btn=>{
 });
 
 function showDetail(id){
-  apiOrdersGet({id}).then(d=>{
+  Promise.all([apiOrdersGet({id}), apiMyAfterSales({order_id:id})]).then(([d,a])=>{
     if(!d.ok){ Toast.show(d.error||'Couldn’t open that order'); return; }
     const o=d.order;
+    CURRENT=o; AFTER=a.ok?a:{returns:[],refunds:[]};
     document.getElementById('order-detail').style.display='block';
     document.getElementById('od-id').textContent=o.id;
     document.getElementById('od-date').textContent=o.created_at?'Placed '+o.created_at.slice(0,10):'';
@@ -178,39 +251,216 @@ function showDetail(id){
     document.getElementById('od-status').textContent=cap(o.status);
     document.getElementById('od-status').className='status-pill '+o.status;
     document.getElementById('od-pickup').textContent=(o.pickup_date||'—')+' at '+(o.pickup_time||'—');
+    const delivered=document.getElementById('od-delivered');
+    delivered.hidden=!o.delivered_at;
+    if(o.delivered_at) delivered.querySelector('strong').textContent=day(o.delivered_at);
     document.getElementById('od-items').innerHTML=(o.items||[]).map(it=>`
-      <tr><td class="i-name">${esc(it.name)}</td><td class="i-qty" data-label="Qty">${it.qty}</td><td class="i-price" data-label="Unit">${peso(it.price)}</td><td class="i-sub">${peso(it.price*it.qty)}</td></tr>`).join('');
+      <tr><td class="i-name">${esc(it.name)}${it.size?` <small style="color:var(--ink-3);">(${esc(it.size)})</small>`:''}</td><td class="i-qty" data-label="Qty">${it.qty}</td><td class="i-price" data-label="Unit">${peso(it.price)}</td><td class="i-sub">${peso(it.price*it.qty)}</td></tr>`).join('');
     const sub=(o.items||[]).reduce((s,i)=>s+i.price*i.qty,0);
-    const discAmt=Math.round(sub*(o.discount_pct||0)/100);
+    const vat=orderVat(o);
     document.getElementById('od-totals').innerHTML=`
-      <div>Subtotal: ${peso(sub)}</div>
-      ${o.discount_pct?`<div>Discount (${o.discount_pct}%): -${peso(discAmt)}</div>`:''}
-      <div style="font-weight:700;font-size:1rem;">Total: ${peso(o.total)}</div>`;
-    const acts=document.getElementById('od-actions');
-    acts.innerHTML=o.status==='reserved'?`<button class="btn-outline btn-sm" id="od-cancel" onclick="cancelOrder('${esc(o.id)}')">Cancel Reservation</button>`:'';
+      <div class="od-row"><span>Subtotal</span><span>${peso2(sub)}</span></div>
+      ${o.discount_pct?`<div class="od-row od-disc"><span>Discount (${o.discount_pct}%)</span><span>-${peso2(sub-vat.total)}</span></div>`:''}
+      <div class="vat-box">
+        <div class="vat-row"><span>VATable Sales</span><span>${peso2(vat.vatable_sales)}</span></div>
+        <div class="vat-row"><span>${VAT_LABEL}</span><span>${peso2(vat.vat_amount)}</span></div>
+      </div>
+      <div class="od-row od-due"><span>Total Amount Due</span><span>${peso2(vat.total)}</span></div>`;
+    renderActions();
+    renderAfterSales();
     document.getElementById('order-detail').scrollIntoView({behavior:'smooth',block:'start'});
   });
 }
 
-// Tap once to arm, tap again within 4 s to cancel (no browser pop-up, which looks out of place in the app)
-function cancelOrder(id){
-  const btn=document.getElementById('od-cancel');
-  if(!btn || btn.disabled) return;
-  if(!btn.dataset.armed){
-    btn.dataset.armed='1'; btn.textContent='Tap again to cancel';
-    btn._t=setTimeout(()=>{ delete btn.dataset.armed; btn.textContent='Cancel Reservation'; },4000);
-    return;
+function renderActions(){
+  const o=CURRENT, acts=document.getElementById('od-actions'), note=document.getElementById('od-return-note');
+  const elig=returnEligibility(o, AFTER.returns);
+  let html='';
+  if(CANCELLABLE_STATUSES.includes(o.status)) html+=`<button class="btn-outline btn-sm" type="button" onclick="openCancel()">Cancel Order</button>`;
+  if(elig.ok) html+=`<button class="btn-primary btn-sm" type="button" onclick="openReturn()">Request Return</button>`;
+  html+=`<a class="btn-outline btn-sm" href="invoice.html?id=${encodeURIComponent(o.id)}">View Invoice</a>`;
+  acts.innerHTML=html;
+  // Why a picked-up order can't be returned (window ended, already requested…)
+  note.hidden=!(o.status==='completed');
+  note.textContent=elig.ok?`Return window: ${elig.days_left} day${elig.days_left===1?'':'s'} left (returns are accepted within ${RETURN_WINDOW_DAYS} days of pickup).`:(elig.reason||'');
+}
+
+function returnFlow(r){
+  const rejected=r.status==='rejected';
+  const steps=[['requested','Requested'],[rejected?'rejected':'approved',rejected?'Rejected':'Approved'],['item_received','Item Received'],['refunded','Refunded']];
+  const order=['requested','approved','item_received','refunded'];
+  const at=rejected?1:order.indexOf(r.status);
+  return `<ol class="rt-flow">${steps.map(([,label],i)=>{
+    const cls=rejected&&i===1?'failed':(i<at||r.status==='refunded')?'done':i===at?'current':'';
+    const mark=cls==='failed'?'&times;':cls==='done'?'&#10003;':i+1;
+    return `<li class="${cls}"><span class="rt-dot">${mark}</span><span class="rt-step">${label}</span></li>`;}).join('')}</ol>`;
+}
+
+function renderAfterSales(){
+  const o=CURRENT, box=document.getElementById('od-aftersales');
+  let html='';
+  if(o.status==='cancelled'){
+    html+=`<div class="as-block"><p class="as-title">Cancellation</p><div class="as-card"><div class="as-meta">
+      ${o.cancel_reason?`<div>Reason: <b>${esc(o.cancel_reason)}</b></div>`:`<div>${o.cancelled_by==='admin'?'Cancelled by the shop.':'Cancelled.'}</div>`}
+      ${o.cancel_note?`<div>Note: ${esc(o.cancel_note)}</div>`:''}
+      ${o.cancelled_at?`<div>Cancelled on: <b>${esc(when(o.cancelled_at))}</b></div>`:''}
+    </div></div></div>`;
   }
-  clearTimeout(btn._t); btn.disabled=true; btn.textContent='Cancelling…';
-  apiOrderCancel({order_id:id}).then(d=>{
-    if(d.ok){ loadOrders(); document.getElementById('order-detail').style.display='none'; Toast.show('Reservation cancelled'); }
-    else { btn.disabled=false; delete btn.dataset.armed; btn.textContent='Cancel Reservation'; showMsg(document.getElementById('od-msg'),'error',d.error||'Could not cancel'); }
+  if(AFTER.returns.length){
+    html+=`<div class="as-block"><p class="as-title">Return Requests</p>`+AFTER.returns.map(r=>`
+      <div class="as-card">
+        <div class="as-card-head"><strong>Requested ${esc(day(r.created_at))}</strong><span class="status-pill ${RETURN_PILL[r.status]||''}">${cap(r.status)}</span></div>
+        ${returnFlow(r)}
+        <div class="as-meta">
+          <div>Items: <b>${r.items.map(i=>`${esc(i.name)}${i.size?' ('+esc(i.size)+')':''} × ${i.qty}`).join(', ')}</b></div>
+          <div>Reason: <b>${esc(r.reason)}</b></div>
+          <div>${esc(r.description)}</div>
+        </div>
+        ${r.status==='rejected'&&r.reject_reason?`<div class="as-alert">Not approved: ${esc(r.reject_reason)}</div>`:''}
+      </div>`).join('')+`</div>`;
+  }
+  if(AFTER.refunds.length){
+    html+=`<div class="as-block"><p class="as-title">Refunds</p>`+AFTER.refunds.map(f=>`
+      <div class="as-card">
+        <div class="as-card-head"><strong>${peso2(f.amount)} via ${esc(f.method)}</strong><span class="status-pill ${REFUND_PILL[f.status]||''}">${cap(f.status)}</span></div>
+        <div class="as-meta">
+          <div>For: <b>${f.source==='return'?'Returned items':'Cancelled order'}</b></div>
+          ${f.reference_no?`<div>Reference no.: <b class="mono">${esc(f.reference_no)}</b></div>`:''}
+          <div>${f.status==='completed'&&f.completed_at?'Completed '+esc(day(f.completed_at)):'Started '+esc(day(f.created_at))}</div>
+        </div>
+      </div>`).join('')+`</div>`;
+  }
+  box.innerHTML=html;
+}
+
+// ── Dialog helpers ──
+function openModal(m){ m.classList.add('open'); }
+function closeModal(m){ m.classList.remove('open'); }
+document.querySelectorAll('.as-modal').forEach(m=>{
+  m.addEventListener('click',e=>{ if(e.target===m||e.target.closest('[data-close]')) closeModal(m); });
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.as-modal.open').forEach(closeModal); });
+
+// ── Cancel order: choose a reason, then confirm ──
+const cancelModal=document.getElementById('cancel-modal');
+const cReason=document.getElementById('cancel-reason'), cNote=document.getElementById('cancel-note');
+cReason.insertAdjacentHTML('beforeend',CANCEL_REASONS.map(r=>`<option>${esc(r)}</option>`).join(''));
+cReason.addEventListener('change',()=>{ document.getElementById('cancel-note-wrap').hidden=cReason.value!=='Other'; });
+let cancelStep=1;
+function setCancelStep(n){
+  cancelStep=n;
+  document.getElementById('cancel-step-1').hidden=n!==1;
+  document.getElementById('cancel-step-2').hidden=n!==2;
+  document.getElementById('cancel-back').textContent=n===1?'Keep Order':'Go Back';
+  document.getElementById('cancel-next').textContent=n===1?'Continue':'Yes, Cancel Order';
+}
+function openCancel(){
+  if(!CURRENT) return;
+  document.getElementById('cancel-order-id').textContent=CURRENT.id;
+  cReason.value=''; cNote.value=''; document.getElementById('cancel-note-wrap').hidden=true;
+  document.getElementById('cancel-msg').className='form-msg';
+  document.getElementById('cancel-next').disabled=false;
+  setCancelStep(1);
+  openModal(cancelModal);
+}
+document.getElementById('cancel-back').addEventListener('click',()=>{ if(cancelStep===2) setCancelStep(1); else closeModal(cancelModal); });
+document.getElementById('cancel-next').addEventListener('click',async e=>{
+  const msg=document.getElementById('cancel-msg'), btn=e.currentTarget;
+  if(cancelStep===1){
+    if(!cReason.value) return showMsg(msg,'error','Please choose a reason.');
+    if(cReason.value==='Other'&&!cNote.value.trim()) return showMsg(msg,'error','Please tell us the reason.');
+    document.getElementById('cancel-summary').innerHTML=`Order <b class="mono">${esc(CURRENT.id)}</b> (${peso2(CURRENT.total)})<br>Reason: <b>${esc(cReason.value)}</b>${cNote.value.trim()?`<br>${esc(cNote.value.trim())}`:''}`;
+    msg.className='form-msg';
+    return setCancelStep(2);
+  }
+  if(btn.disabled) return;
+  btn.disabled=true; btn.textContent='Cancelling…';
+  const d=await apiOrderCancel({order_id:CURRENT.id,reason:cReason.value,note:cNote.value});
+  if(d.ok){ closeModal(cancelModal); Toast.show('Order cancelled'); loadOrders(); showDetail(CURRENT.id); }
+  else { btn.disabled=false; setCancelStep(2); showMsg(msg,'error',d.error||'Could not cancel'); }
+});
+
+// ── Return request ──
+const returnModal=document.getElementById('return-modal');
+const rReason=document.getElementById('return-reason');
+rReason.insertAdjacentHTML('beforeend',RETURN_REASONS.map(r=>`<option>${esc(r)}</option>`).join(''));
+let PHOTO=null;
+function openReturn(){
+  const o=CURRENT; if(!o) return;
+  const elig=returnEligibility(o, AFTER.returns);
+  if(!elig.ok) return Toast.show(elig.reason);
+  document.getElementById('return-order-id').textContent=o.id;
+  document.getElementById('return-window').textContent=`Picked up ${day(o.delivered_at)}. Returns are accepted within ${RETURN_WINDOW_DAYS} days.`;
+  document.getElementById('return-items').innerHTML=(o.items||[]).map((it,i)=>`
+    <label class="rt-item">
+      <input type="checkbox" data-i="${i}" />
+      <span>${esc(it.name)}${it.size?` (${esc(it.size)})`:''}<small>${peso(it.price)} each · bought ${it.qty}</small></span>
+      <span class="rt-qty"><small>Qty</small><select data-qty="${i}" aria-label="Quantity to return">${Array.from({length:it.qty},(_,n)=>`<option>${n+1}</option>`).join('')}</select></span>
+    </label>`).join('');
+  rReason.value=''; document.getElementById('return-desc').value='';
+  clearPhoto();
+  document.getElementById('return-msg').className='form-msg';
+  document.getElementById('return-submit').disabled=false;
+  openModal(returnModal);
+}
+
+// The photo is shrunk in the browser so it fits in the request (no upload server needed)
+function shrinkImage(file){
+  return new Promise((resolve,reject)=>{
+    const img=new Image(), url=URL.createObjectURL(file);
+    img.onload=()=>{
+      const scale=Math.min(1,1000/Math.max(img.width,img.height));
+      const c=document.createElement('canvas');
+      c.width=Math.round(img.width*scale); c.height=Math.round(img.height*scale);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL('image/jpeg',0.72));
+    };
+    img.onerror=()=>{ URL.revokeObjectURL(url); reject(new Error('Not an image')); };
+    img.src=url;
   });
 }
+function clearPhoto(){
+  PHOTO=null;
+  document.getElementById('return-photo-name').textContent='Add a photo of the item';
+  document.getElementById('return-photo').value='';
+  document.getElementById('return-photo-preview').hidden=true;
+  document.getElementById('return-photo-clear').hidden=true;
+}
+document.getElementById('return-photo').addEventListener('change',async e=>{
+  const f=e.target.files[0]; if(!f) return clearPhoto();
+  try{
+    PHOTO=await shrinkImage(f);
+    const prev=document.getElementById('return-photo-preview');
+    prev.src=PHOTO; prev.hidden=false;
+    document.getElementById('return-photo-name').textContent='Change photo';
+    document.getElementById('return-photo-clear').hidden=false;
+  }catch{ clearPhoto(); showMsg(document.getElementById('return-msg'),'error','That file isn’t a photo we can read.'); }
+});
+document.getElementById('return-photo-clear').addEventListener('click',clearPhoto);
+
+document.getElementById('return-submit').addEventListener('click',async e=>{
+  const btn=e.currentTarget, msg=document.getElementById('return-msg');
+  if(btn.disabled) return;
+  const items=[...document.querySelectorAll('#return-items input[type="checkbox"]:checked')].map(cb=>{
+    const it=CURRENT.items[cb.dataset.i];
+    return { product_id:it.product_id, size:it.size||null, qty:Number(document.querySelector(`[data-qty="${cb.dataset.i}"]`).value) };
+  });
+  if(!items.length) return showMsg(msg,'error','Choose at least one item to return.');
+  if(!rReason.value) return showMsg(msg,'error','Please choose a reason.');
+  const desc=document.getElementById('return-desc').value.trim();
+  if(!desc) return showMsg(msg,'error','Please describe the problem.');
+  btn.disabled=true; btn.textContent='Sending…';
+  const d=await apiReturnRequest({order_id:CURRENT.id,items,reason:rReason.value,description:desc,photo:PHOTO});
+  btn.textContent='Send Request';
+  if(d.ok){ closeModal(returnModal); Toast.show('Return request sent'); showDetail(CURRENT.id); }
+  else { btn.disabled=false; showMsg(msg,'error',d.error||'Could not send the request'); }
+});
 
 // Inline onclick handlers need global access from a module
 window.showDetail=showDetail;
-window.cancelOrder=cancelOrder;
+window.openCancel=openCancel;
+window.openReturn=openReturn;
 
 const user=await getUser();
 document.getElementById(user?'member-view':'guest-view').hidden=false;

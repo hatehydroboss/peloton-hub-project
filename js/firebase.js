@@ -39,6 +39,10 @@ import {
   getCountFromServer,
 }                                             from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { emailNewTicket, emailTicketReply }  from './email.js';
+import { VAT_RATE, VAT_LABEL, BUSINESS, vatBreakdown, orderVat, peso2, invoiceNo } from './tax.js';
+
+// Tax helpers, also reachable from the admin pages through window.FB
+export { VAT_RATE, VAT_LABEL, BUSINESS, vatBreakdown, orderVat, peso2, invoiceNo };
 
 // ── FIREBASE CONFIG ──────────────────────────────────────────
 // Replace with your own project's config from the Firebase Console
@@ -129,6 +133,17 @@ async function getUsersById(ids) {
     }
   });
   return map;
+}
+
+/** An order document with its dates as local date-time strings. */
+function orderDates(data) {
+  return {
+    created_at:   toISO(data.created_at),
+    updated_at:   toISO(data.updated_at),
+    cancelled_at: toISO(data.cancelled_at),
+    delivered_at: toISO(data.delivered_at),
+    invoice_date: toISO(data.invoice_date),
+  };
 }
 
 /** Order lines: stored on the order since the speed-up; older orders keep them in a sub-collection. */
@@ -377,7 +392,9 @@ export async function apiCatalog({ id, q, cat, sub, brand, stock, tag, sort = 'n
       const revSnap = await getDocs(
         query(collection(db, 'products', id, 'reviews'), orderBy('created_at', 'desc'))
       );
-      p.reviews = revSnap.docs.map(d => ({ id: d.id, ...d.data(), created_at: toISO(d.data().created_at) }));
+      p.reviews = revSnap.docs
+        .filter(d => !d.data().hidden)   // hidden by an admin (Admin → Reviews)
+        .map(d => ({ id: d.id, ...d.data(), created_at: toISO(d.data().created_at), reply_at: toISO(d.data().reply_at) }));
       return { ok: true, product: p };
     }
 
@@ -686,7 +703,7 @@ export async function apiOrdersGet({ id } = {}) {
       const snap = await getDoc(doc(db, 'orders', id));
       if (!snap.exists() || snap.data().user_id !== u.uid)
         return { ok: false, error: 'Order not found' };
-      const order = { id: snap.id, ...snap.data(), created_at: toISO(snap.data().created_at), updated_at: toISO(snap.data().updated_at) };
+      const order = { id: snap.id, ...snap.data(), ...orderDates(snap.data()) };
       order.items = await getOrderItems(id, snap.data());
       return { ok: true, order };
     }
@@ -696,7 +713,7 @@ export async function apiOrdersGet({ id } = {}) {
     );
     const orders = await Promise.all(snap.docs.map(async d => ({
       id: d.id, ...d.data(),
-      created_at: toISO(d.data().created_at), updated_at: toISO(d.data().updated_at),
+      ...orderDates(d.data()),
       items: await getOrderItems(d.id, d.data()),
     })));
     return { ok: true, orders };
@@ -741,6 +758,7 @@ export async function apiOrderPlace({ promo_code = '', pickup_date = '', pickup_
 
     const subtotal = cart.reduce((s, l) => s + (l.price * l.qty), 0);
     const total    = Math.round(subtotal * (1 - discPct / 100) * 100) / 100;
+    const { vatable_sales, vat_amount } = vatBreakdown(total);   // prices are VAT-inclusive
     const orderId  = makeOrderId();
 
     // Firestore transaction: write order + decrement stock + clear cart
@@ -765,6 +783,8 @@ export async function apiOrderPlace({ promo_code = '', pickup_date = '', pickup_
         discount_pct:   discPct,
         subtotal,
         total,
+        vatable_sales,
+        vat_amount,
         payment_method: (payment_method === 'online' ? 'paymongo' : 'cash'),
         payment_status: 'pending',   // the payment server (MongoDB) records whether it was paid
         status:         'reserved',
@@ -799,35 +819,176 @@ export async function apiOrderPlace({ promo_code = '', pickup_date = '', pickup_
   }
 }
 
+// Statuses a customer may still cancel from: Reserved (pending) and Preparing (processing)
+export const CANCELLABLE_STATUSES = ['reserved', 'preparing'];
+export const CANCEL_REASONS = [
+  'Changed my mind',
+  'Ordered by mistake',
+  'Found a cheaper option',
+  'Delivery takes too long',
+  'Wrong item/quantity',
+  'Other',
+];
+
 /**
- * Cancel a reserved order.
+ * Cancel an order that is still Reserved or Preparing, with the customer's reason.
  * Mirrors: POST /api/orders.php  action=cancel
  * Returns: { ok }
  */
-export async function apiOrderCancel({ order_id }) {
+export async function apiOrderCancel({ order_id, reason = '', note = '' }) {
   const u = auth.currentUser;
   if (!u) return { ok: false, error: 'Not logged in' };
   if (!order_id) return { ok: false, error: 'order_id required' };
+  if (!CANCEL_REASONS.includes(reason)) return { ok: false, error: 'Please choose a reason' };
+  note = String(note || '').trim().slice(0, 500);
+  if (reason === 'Other' && !note) return { ok: false, error: 'Please tell us the reason' };
   try {
     const orderRef  = doc(db, 'orders', order_id);
     const orderSnap = await getDoc(orderRef);
     if (!orderSnap.exists() || orderSnap.data().user_id !== u.uid)
       return { ok: false, error: 'Order not found' };
-    if (orderSnap.data().status !== 'reserved')
-      return { ok: false, error: 'Only reserved orders can be cancelled' };
+    if (!CANCELLABLE_STATUSES.includes(orderSnap.data().status))
+      return { ok: false, error: 'This order can no longer be cancelled' };
 
     // Items to restore stock for
     const items = await getOrderItems(order_id, orderSnap.data());
 
     await runTransaction(db, async (tx) => {
       const stock = await prepareStockChange(tx, items, +1);   // reads first
-      tx.update(orderRef, { status: 'cancelled', updated_at: serverTimestamp() });
+      tx.update(orderRef, {
+        status:        'cancelled',
+        cancel_reason: reason,
+        cancel_note:   note || null,
+        cancelled_at:  serverTimestamp(),
+        cancelled_by:  'customer',
+        updated_at:    serverTimestamp(),
+      });
       stock.apply();                                           // restore stock
     });
 
     return { ok: true };
   } catch (e) {
     return { ok: false, error: 'Could not cancel order: ' + e.message };
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  RETURNS & REFUNDS  (customer side)
+//  returns/{id}: a return request for items of a completed order
+//    status: requested → approved | rejected → item_received → refunded
+//  refunds/{id}: money paid back for a cancelled order or a received return
+//    status: pending → processing → completed
+// ════════════════════════════════════════════════════════════
+
+export const RETURN_WINDOW_DAYS = 7;
+export const RETURN_REASONS = ['Damaged', 'Wrong item', 'Missing parts', 'Not as described', 'Other'];
+export const RETURN_STATUSES = ['requested', 'approved', 'rejected', 'item_received', 'refunded'];
+export const REFUND_METHODS = ['GCash', 'Maya', 'Bank Transfer', 'Store Credit'];
+export const REFUND_STATUSES = ['pending', 'processing', 'completed'];
+
+/** Can this order still be returned? Completed (picked up) orders, within 7 days of
+ *  their delivery date. Orders completed before delivery dates were recorded can't be.
+ *  Returns: { ok, days_left } or { ok:false, reason } */
+export function returnEligibility(order, returns = []) {
+  if (!order || order.status !== 'completed') return { ok: false, reason: 'Only picked-up orders can be returned.' };
+  if (!order.delivered_at) return { ok: false, reason: 'This order has no pickup date on record, so it can’t be returned online. Please contact support.' };
+  const deadline = new Date(order.delivered_at).getTime() + RETURN_WINDOW_DAYS * 864e5;
+  if (Date.now() > deadline) return { ok: false, reason: `The ${RETURN_WINDOW_DAYS}-day return window for this order has ended.` };
+  if (returns.some(r => r.order_id === order.id && r.status !== 'rejected'))
+    return { ok: false, reason: 'A return request is already open for this order.' };
+  return { ok: true, days_left: Math.max(0, Math.ceil((deadline - Date.now()) / 864e5)) };
+}
+
+function returnDoc(d) {
+  const r = d.data();
+  return { id: d.id, ...r,
+    created_at:  toISO(r.created_at),  decided_at:  toISO(r.decided_at),
+    received_at: toISO(r.received_at), refunded_at: toISO(r.refunded_at) };
+}
+function refundDoc(d) {
+  const r = d.data();
+  return { id: d.id, ...r,
+    created_at: toISO(r.created_at), updated_at: toISO(r.updated_at), completed_at: toISO(r.completed_at) };
+}
+
+/**
+ * The signed-in customer's return requests and refunds (optionally for one order).
+ * Returns: { ok, returns[], refunds[] }
+ */
+export async function apiMyAfterSales({ order_id } = {}) {
+  const u = auth.currentUser;
+  if (!u) return { ok: false, error: 'Not logged in', returns: [], refunds: [] };
+  try {
+    const [rSnap, fSnap] = await Promise.all([
+      getDocs(query(collection(db, 'returns'), where('user_id', '==', u.uid))),
+      getDocs(query(collection(db, 'refunds'), where('user_id', '==', u.uid))),
+    ]);
+    const byOrder = x => !order_id || x.order_id === order_id;
+    const newest  = (a, b) => (b.created_at || '').localeCompare(a.created_at || '');
+    return {
+      ok: true,
+      returns: rSnap.docs.map(returnDoc).filter(byOrder).sort(newest),
+      refunds: fSnap.docs.map(refundDoc).filter(byOrder).sort(newest),
+    };
+  } catch (e) {
+    return { ok: false, error: e.message, returns: [], refunds: [] };
+  }
+}
+
+/**
+ * Request a return for items of a completed order.
+ * items: [{ product_id, size, qty }] — qty can't exceed what was bought.
+ * photo: optional small JPEG data URL (made in the browser, see orders.html).
+ * Returns: { ok, id }
+ */
+export async function apiReturnRequest({ order_id, items = [], reason, description = '', photo = null }) {
+  const u = auth.currentUser;
+  if (!u) return { ok: false, error: 'Not logged in' };
+  if (!RETURN_REASONS.includes(reason)) return { ok: false, error: 'Please choose a reason' };
+  description = String(description || '').trim().slice(0, 1000);
+  if (!description) return { ok: false, error: 'Please describe the problem' };
+  if (photo && (typeof photo !== 'string' || !photo.startsWith('data:image/') || photo.length > 700000))
+    return { ok: false, error: 'That photo is too large. Please choose another one.' };
+  try {
+    const orderSnap = await getDoc(doc(db, 'orders', order_id));
+    if (!orderSnap.exists() || orderSnap.data().user_id !== u.uid) return { ok: false, error: 'Order not found' };
+    const order = { id: orderSnap.id, ...orderSnap.data(), ...orderDates(orderSnap.data()) };
+
+    const { returns } = await apiMyAfterSales({ order_id });
+    const check = returnEligibility(order, returns);
+    if (!check.ok) return { ok: false, error: check.reason };
+
+    // Match the chosen lines to what was bought (price and name come from the order)
+    const bought = await getOrderItems(order_id, order);
+    const lines = [];
+    for (const it of items) {
+      const qty  = parseInt(it.qty, 10) || 0;
+      if (qty <= 0) continue;
+      const line = bought.find(b => b.product_id === it.product_id && (b.size || null) === (it.size || null));
+      if (!line) return { ok: false, error: 'An item isn’t part of this order' };
+      if (qty > line.qty) return { ok: false, error: `You bought only ${line.qty} × ${line.name}` };
+      lines.push({ product_id: line.product_id, name: line.name, size: line.size || null, price: line.price, qty });
+    }
+    if (!lines.length) return { ok: false, error: 'Choose at least one item to return' };
+
+    const ref = await addDoc(collection(db, 'returns'), {
+      order_id,
+      user_id:        u.uid,
+      customer_name:  order.customer_name  || '',
+      customer_email: order.customer_email || '',
+      items:          lines,
+      // Value of the returned items after the order's discount (what was actually paid for them)
+      items_value:    Math.round(lines.reduce((s, l) => s + l.price * l.qty, 0) * (1 - (order.discount_pct || 0) / 100) * 100) / 100,
+      reason,
+      description,
+      photo:          photo || null,
+      status:         'requested',
+      reject_reason:  null,
+      created_at:     serverTimestamp(),
+    });
+    return { ok: true, id: ref.id };
+  } catch (e) {
+    return { ok: false, error: 'Could not send the return request: ' + e.message };
   }
 }
 
@@ -1252,7 +1413,7 @@ export async function apiAdminOrdersGet({ id, status: statusFilter, q } = {}) {
       const snap = await getDoc(doc(db, 'orders', id));
       if (!snap.exists()) return { ok: false, error: 'Not found' };
       const data  = snap.data();
-      const order = { id: snap.id, ...data, created_at: toISO(data.created_at) };
+      const order = { id: snap.id, ...data, ...orderDates(data) };
       const [items, users] = await Promise.all([
         getOrderItems(id, data),
         data.user_id && !data.customer_name ? getUsersById([data.user_id]) : Promise.resolve({}),
@@ -1279,7 +1440,7 @@ export async function apiAdminOrdersGet({ id, status: statusFilter, q } = {}) {
       const u = users[o.user_id];
       return {
         ...o,
-        created_at:     toISO(o.created_at),
+        ...orderDates(o),
         customer_name:  o.customer_name  || u?.name  || o.guest_email || 'Guest',
         customer_email: o.customer_email || u?.email || o.guest_email || '',
         tier:           o.tier || u?.tier || null,
@@ -1324,13 +1485,252 @@ export async function apiAdminOrderStatus({ id, status }) {
                : currentStatus === 'cancelled' && status !== 'cancelled' ? -1
                : 0;
 
+    // Picked up (= delivered): record the delivery date, which starts the 7-day return
+    // window, and issue the next sales invoice number if the order has none yet
+    const completing = status === 'completed' && currentStatus !== 'completed';
+    const needsInvoice = completing && !orderSnap.data().invoice_no;
+    const counterRef = doc(db, 'config', 'invoice_counter');
+    let invoice = null;
+
     await runTransaction(db, async (tx) => {
-      const stock = sign ? await prepareStockChange(tx, items, sign) : null;   // reads first
+      const counter = needsInvoice ? await tx.get(counterRef) : null;            // reads first
+      const stock = sign ? await prepareStockChange(tx, items, sign) : null;
       if (stock && stock.shortages.length) throw new Error('Not enough stock to restore this order: ' + stock.shortages.join(', '));
-      tx.update(orderRef, { status, updated_at: serverTimestamp() });
+
+      const changes = { status, updated_at: serverTimestamp() };
+      if (completing) changes.delivered_at = serverTimestamp();
+      if (needsInvoice) {
+        const seq = ((counter.exists() && counter.data().last) || 0) + 1;
+        invoice = invoiceNo(seq);
+        tx.set(counterRef, { last: seq, updated_at: serverTimestamp() }, { merge: true });
+        Object.assign(changes, { invoice_no: invoice, invoice_seq: seq, invoice_date: serverTimestamp() });
+      }
+      if (status === 'cancelled' && currentStatus !== 'cancelled')
+        Object.assign(changes, { cancelled_at: serverTimestamp(), cancelled_by: 'admin' });
+      tx.update(orderRef, changes);
       if (stock) stock.apply();
     });
 
+    return { ok: true, invoice_no: invoice };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  ADMIN — RETURNS
+// ════════════════════════════════════════════════════════════
+
+/** Every return request, newest first. Returns: { ok, returns[] } */
+export async function apiAdminReturnsGet() {
+  try {
+    const snap = await getDocs(query(collection(db, 'returns'), orderBy('created_at', 'desc'), limit(500)));
+    return { ok: true, returns: snap.docs.map(returnDoc) };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+/**
+ * Move a return request on: approve / reject (a reason the customer sees is required) /
+ * item_received (approved returns only). 'refunded' is set by the Refunds page.
+ */
+export async function apiAdminReturnStatus({ id, status, reject_reason = '' }) {
+  const from = { approved: ['requested'], rejected: ['requested'], item_received: ['approved'] };
+  if (!id || !from[status]) return { ok: false, error: 'Invalid request' };
+  reject_reason = String(reject_reason || '').trim().slice(0, 500);
+  if (status === 'rejected' && !reject_reason) return { ok: false, error: 'Give the customer a reason for the rejection' };
+  try {
+    const admin = await getCurrentAdminDoc();
+    if (!admin) return { ok: false, error: 'Unauthorised' };
+    const ref  = doc(db, 'returns', id);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return { ok: false, error: 'Return request not found' };
+    if (!from[status].includes(snap.data().status))
+      return { ok: false, error: `A ${snap.data().status.replace('_', ' ')} return can’t be marked ${status.replace('_', ' ')}` };
+
+    const changes = { status, updated_at: serverTimestamp() };
+    if (status === 'item_received') changes.received_at = serverTimestamp();
+    else { changes.decided_at = serverTimestamp(); changes.decided_by = admin.name || 'Admin'; }
+    if (status === 'rejected') changes.reject_reason = reject_reason;
+    await updateDoc(ref, changes);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  ADMIN — REFUNDS
+// ════════════════════════════════════════════════════════════
+
+/** Every refund, newest first. Returns: { ok, refunds[] } */
+export async function apiAdminRefundsGet() {
+  try {
+    const snap = await getDocs(query(collection(db, 'refunds'), orderBy('created_at', 'desc'), limit(500)));
+    return { ok: true, refunds: snap.docs.map(refundDoc) };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+/**
+ * Record a refund (starts as Pending).
+ * source 'cancellation': a cancelled order that was paid — max_amount is the amount paid.
+ * source 'return': a received return — max_amount is what the returned items cost.
+ * The amount can't exceed max_amount, and all refunds on one order can't exceed its total.
+ */
+export async function apiAdminRefundCreate({ source, order_id, return_id = null, amount, max_amount, method, reference_no = '', notes = '' }) {
+  if (!['cancellation', 'return'].includes(source) || !order_id) return { ok: false, error: 'Invalid request' };
+  if (!REFUND_METHODS.includes(method)) return { ok: false, error: 'Choose a refund method' };
+  amount = Math.round(Number(amount) * 100) / 100;
+  max_amount = Math.round(Number(max_amount) * 100) / 100;
+  if (!(amount > 0)) return { ok: false, error: 'Enter an amount greater than ₱0' };
+  if (amount > max_amount) return { ok: false, error: `The refund can’t be more than ${peso2(max_amount)}` };
+  try {
+    const admin = await getCurrentAdminDoc();
+    if (!admin) return { ok: false, error: 'Unauthorised' };
+    const orderSnap = await getDoc(doc(db, 'orders', order_id));
+    if (!orderSnap.exists()) return { ok: false, error: 'Order not found' };
+    const order = orderSnap.data();
+    if (source === 'cancellation' && order.status !== 'cancelled') return { ok: false, error: 'This order isn’t cancelled' };
+
+    let ret = null;
+    if (source === 'return') {
+      const rSnap = await getDoc(doc(db, 'returns', return_id || '-'));
+      if (!rSnap.exists() || rSnap.data().order_id !== order_id) return { ok: false, error: 'Return request not found' };
+      ret = rSnap.data();
+      if (ret.status !== 'item_received') return { ok: false, error: 'Mark the returned item as received first' };
+    }
+
+    // Never pay back more than the order's total across all its refunds
+    const prior = await getDocs(query(collection(db, 'refunds'), where('order_id', '==', order_id)));
+    const already = prior.docs.reduce((s, d) => s + (d.data().amount || 0), 0);
+    if (prior.docs.some(d => d.data().source === source && (d.data().return_id || null) === (return_id || null)))
+      return { ok: false, error: 'A refund has already been recorded for this' };
+    if (already + amount > (order.total || 0) + 0.001)
+      return { ok: false, error: `Only ${peso2(Math.max(0, (order.total || 0) - already))} of this order is left to refund` };
+
+    const ref = await addDoc(collection(db, 'refunds'), {
+      source,
+      order_id,
+      return_id:      return_id || null,
+      user_id:        order.user_id || null,
+      customer_name:  order.customer_name || ret?.customer_name || '',
+      customer_email: order.customer_email || ret?.customer_email || '',
+      amount,
+      max_amount,
+      method,
+      reference_no:   String(reference_no || '').trim().slice(0, 100) || null,
+      notes:          String(notes || '').trim().slice(0, 1000) || null,
+      status:         'pending',
+      created_by:     admin.name || 'Admin',
+      created_at:     serverTimestamp(),
+      updated_at:     serverTimestamp(),
+    });
+    return { ok: true, id: ref.id };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+/** Move a refund one step on: pending → processing → completed. Completing a
+ *  return's refund also marks that return Refunded. */
+export async function apiAdminRefundStatus({ id, status, reference_no }) {
+  const NEXT = { pending: 'processing', processing: 'completed' };
+  if (!id || !REFUND_STATUSES.includes(status)) return { ok: false, error: 'Invalid request' };
+  try {
+    const admin = await getCurrentAdminDoc();
+    if (!admin) return { ok: false, error: 'Unauthorised' };
+    const ref  = doc(db, 'refunds', id);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return { ok: false, error: 'Refund not found' };
+    const r = snap.data();
+    if (NEXT[r.status] !== status) return { ok: false, error: `A ${r.status} refund can’t be marked ${status}` };
+
+    const batch = writeBatch(db);
+    const changes = { status, updated_at: serverTimestamp() };
+    if (reference_no !== undefined && String(reference_no).trim()) changes.reference_no = String(reference_no).trim().slice(0, 100);
+    if (status === 'completed') changes.completed_at = serverTimestamp();
+    batch.update(ref, changes);
+    if (status === 'completed' && r.source === 'return' && r.return_id)
+      batch.update(doc(db, 'returns', r.return_id), { status: 'refunded', refunded_at: serverTimestamp(), refund_id: id });
+    await batch.commit();
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  ADMIN — REVIEWS  (products/{id}/reviews/{rid})
+// ════════════════════════════════════════════════════════════
+
+/**
+ * Every product review, newest first, with its product's name.
+ * Returns: { ok, reviews[], average, count } — average/count leave hidden reviews out.
+ */
+export async function apiAdminReviewsGet() {
+  try {
+    const [revSnap, prodSnap] = await Promise.all([
+      getDocs(collectionGroup(db, 'reviews')),
+      getDocs(collection(db, 'products')),
+    ]);
+    const names = {};
+    prodSnap.docs.forEach(d => { names[d.id] = d.data().name; });
+    const reviews = revSnap.docs
+      .filter(d => d.ref.parent.parent?.parent?.id === 'products')
+      .map(d => {
+        const product_id = d.ref.parent.parent.id;
+        return { id: d.id, product_id, product_name: names[product_id] || product_id,
+                 ...d.data(), hidden: !!d.data().hidden, created_at: toISO(d.data().created_at), reply_at: toISO(d.data().reply_at) };
+      })
+      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+    const shown = reviews.filter(r => !r.hidden);
+    const average = shown.length ? shown.reduce((s, r) => s + (r.rating || 0), 0) / shown.length : 0;
+    return { ok: true, reviews, average, count: shown.length };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+/** Hide a review from the product page (or show it again). */
+export async function apiAdminReviewHide({ product_id, id, hidden }) {
+  if (!product_id || !id) return { ok: false, error: 'Invalid request' };
+  try {
+    const admin = await getCurrentAdminDoc();
+    if (!admin) return { ok: false, error: 'Unauthorised' };
+    await updateDoc(doc(db, 'products', product_id, 'reviews', id), { hidden: !!hidden });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+/** Reply to a review as the shop (shown under it on the product page).
+ *  An empty reply removes the shop's reply. */
+export async function apiAdminReviewReply({ product_id, id, reply }) {
+  if (!product_id || !id) return { ok: false, error: 'Invalid request' };
+  reply = String(reply || '').trim().slice(0, 1000);
+  try {
+    const admin = await getCurrentAdminDoc();
+    if (!admin) return { ok: false, error: 'Unauthorised' };
+    await updateDoc(doc(db, 'products', product_id, 'reviews', id), reply
+      ? { reply, reply_by: admin.name || 'PelotonHub', reply_at: serverTimestamp() }
+      : { reply: null, reply_by: null, reply_at: null });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+/** Delete a review for good. */
+export async function apiAdminReviewDelete({ product_id, id }) {
+  if (!product_id || !id) return { ok: false, error: 'Invalid request' };
+  try {
+    const admin = await getCurrentAdminDoc();
+    if (!admin) return { ok: false, error: 'Unauthorised' };
+    await deleteDoc(doc(db, 'products', product_id, 'reviews', id));
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e.message };
@@ -1799,6 +2199,34 @@ export async function apiAdminMessageReply({ id, reply }) {
       console.warn('[email] reply email skipped', e.message);
     }
     return { ok: true, emailed };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+/**
+ * Delete support tickets for good, with their replies.
+ * Returns: { ok, deleted }
+ */
+export async function apiAdminMessagesDelete({ ids = [] }) {
+  ids = [...new Set(ids.filter(Boolean))];
+  if (!ids.length) return { ok: false, error: 'No tickets selected' };
+  try {
+    const admin = await getCurrentAdminDoc();
+    if (!admin) return { ok: false, error: 'Unauthorised' };
+    const replySnaps = await Promise.all(ids.map(id => getDocs(collection(db, 'support_tickets', id, 'replies'))));
+    const refs = [];
+    ids.forEach((id, i) => {
+      replySnaps[i].docs.forEach(r => refs.push(r.ref));
+      refs.push(doc(db, 'support_tickets', id));
+    });
+    // A batch holds at most 500 writes
+    for (let i = 0; i < refs.length; i += 450) {
+      const batch = writeBatch(db);
+      refs.slice(i, i + 450).forEach(ref => batch.delete(ref));
+      await batch.commit();
+    }
+    return { ok: true, deleted: ids.length };
   } catch (e) {
     return { ok: false, error: e.message };
   }
